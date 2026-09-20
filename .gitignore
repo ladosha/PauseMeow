@@ -1,0 +1,9 @@
+/.qt/
+/.tools/
+/build/
+/dist/
+/.vs/
+/.idea/
+*.user
+cat_ref.jpeg
+artifacts/*
