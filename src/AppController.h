@@ -5,6 +5,7 @@
 #include <QElapsedTimer>
 #include <QObject>
 #include <QString>
+#include <QVariantMap>
 
 class QAction;
 class QMenu;
@@ -27,6 +28,8 @@ class AppController final : public QObject
     Q_PROPERTY(bool restPurr READ restPurr NOTIFY settingsChanged)
     Q_PROPERTY(bool configured READ configured NOTIFY configuredChanged)
     Q_PROPERTY(bool settingsVisible READ settingsVisible NOTIFY settingsVisibleChanged)
+    Q_PROPERTY(QString language READ language WRITE setLanguage NOTIFY languageChanged)
+    Q_PROPERTY(QVariantMap translations READ translations NOTIFY languageChanged)
 
 public:
     explicit AppController(bool trayEnabled, QObject *parent = nullptr);
@@ -46,6 +49,8 @@ public:
     [[nodiscard]] bool restPurr() const noexcept;
     [[nodiscard]] bool configured() const noexcept;
     [[nodiscard]] bool settingsVisible() const noexcept;
+    [[nodiscard]] QString language() const;
+    [[nodiscard]] QVariantMap translations() const;
 
     Q_INVOKABLE void applySettings(
         int workMinutes,
@@ -58,6 +63,7 @@ public:
         bool restPurr);
     Q_INVOKABLE void showSettings();
     Q_INVOKABLE void hideSettings();
+    Q_INVOKABLE void setLanguage(const QString &language);
     Q_INVOKABLE void previewBreak(int seconds);
     Q_INVOKABLE void beginRest();
     Q_INVOKABLE void completeLeaving();
@@ -73,6 +79,7 @@ signals:
     void settingsChanged();
     void configuredChanged();
     void settingsVisibleChanged();
+    void languageChanged();
     void catPokeRequested();
     void catHissRequested();
 
@@ -83,8 +90,9 @@ private:
     void createTrayIcon();
     void updateTray();
     void setAutostartEnabled(bool enabled);
+    [[nodiscard]] QString text(const QString &key) const;
     static QString formatSeconds(int totalSeconds);
-    static QString phaseLabel(CountdownTimer::Phase phase, bool paused);
+    [[nodiscard]] QString phaseLabel(CountdownTimer::Phase phase, bool paused) const;
 
     CountdownTimer m_timer;
     int m_workMinutes = 45;
@@ -99,11 +107,15 @@ private:
     bool m_configured = false;
     bool m_settingsVisible = false;
     bool m_trayEnabled = true;
+    QString m_language = QStringLiteral("en");
 
     QElapsedTimer m_clickClock;
     QList<qint64> m_recentClicks;
 
     QSystemTrayIcon *m_trayIcon = nullptr;
     QMenu *m_trayMenu = nullptr;
+    QAction *m_settingsAction = nullptr;
+    QAction *m_breakAction = nullptr;
     QAction *m_pauseAction = nullptr;
+    QAction *m_quitAction = nullptr;
 };

@@ -160,10 +160,10 @@ Window {
         anchors.top: parent.top
         anchors.topMargin: Math.max(44, root.height * 0.08)
         text: appController.phase === "entering"
-            ? "Время остановиться"
+            ? appController.translations["overlay.entering.title"]
             : appController.phase === "leaving"
-                ? "Отлично отдохнули"
-                : "Кот спит — вы отдыхаете"
+                ? appController.translations["overlay.leaving.title"]
+                : appController.translations["overlay.rest.title"]
         color: "#FFF6EA"
         font.pixelSize: Math.max(24, Math.min(40, root.width / 35))
         font.weight: Font.DemiBold
@@ -176,10 +176,10 @@ Window {
         anchors.topMargin: Math.max(90, root.height * 0.14)
         text: {
             if (appController.phase === "rest")
-                return "Отойдите от экрана, расправьте плечи и посмотрите вдаль"
+                return appController.translations["overlay.rest.subtitle"]
             if (appController.phase === "leaving")
-                return "Кот просыпается — через мгновение можно продолжать работу"
-            return "Кот выходит и готовится охранять ваш отдых"
+                return appController.translations["overlay.leaving.subtitle"]
+            return appController.translations["overlay.entering.subtitle"]
         }
         color: "#BEB2C3"
         font.pixelSize: Math.max(14, Math.min(20, root.width / 70))
@@ -216,7 +216,7 @@ Window {
         Text {
             id: bubbleText
             anchors.centerIn: parent
-            text: "Ш-ш-ш… хватит, дай поспать"
+            text: appController.translations["overlay.hiss"]
             color: "#3A303E"
             font.pixelSize: 16
             font.weight: Font.DemiBold
@@ -254,7 +254,7 @@ Window {
 
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: "до пробуждения"
+                text: appController.translations["overlay.untilWake"]
                 color: "#7D7182"
                 font.pixelSize: 13
             }
@@ -271,7 +271,7 @@ Window {
         anchors.top: parent.top
         anchors.margins: 28
         z: 10
-        text: "Разбудить"
+        text: appController.translations["overlay.wake"]
         palette.buttonText: "#EADFEA"
 
         background: Rectangle {

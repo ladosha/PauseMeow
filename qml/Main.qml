@@ -86,7 +86,7 @@ ApplicationWindow {
                 }
 
                 Text {
-                    text: "мин"
+                    text: appController.translations["unit.minutes"]
                     color: "#807682"
                     font.pixelSize: 15
                 }
@@ -100,27 +100,6 @@ ApplicationWindow {
         anchors.fill: parent
         color: "#F6F0E7"
 
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: 280
-            color: "#2A2633"
-            clip: true
-
-            Rectangle {
-                width: 260
-                height: 260
-                radius: 130
-                color: "#403648"
-                opacity: 0.55
-                anchors.right: parent.right
-                anchors.rightMargin: 28
-                anchors.top: parent.top
-                anchors.topMargin: 10
-            }
-        }
-
         ScrollView {
             anchors.fill: parent
             contentWidth: availableWidth
@@ -130,16 +109,30 @@ ApplicationWindow {
                 width: window.width
                 spacing: 18
 
-                Item {
+                Rectangle {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 268
+                    Layout.preferredHeight: 280
+                    color: "#2A2633"
+                    clip: true
+
+                    Rectangle {
+                        id: catCircle
+                        width: 260
+                        height: 260
+                        radius: 130
+                        color: "#403648"
+                        opacity: 0.55
+                        anchors.right: parent.right
+                        anchors.rightMargin: 28
+                        anchors.top: parent.top
+                        anchors.topMargin: 10
+                    }
 
                     SpritePlayer {
                         width: 190
                         height: 190
-                        anchors.right: parent.right
-                        anchors.rightMargin: 38
-                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.centerIn: catCircle
+                        anchors.verticalCenterOffset: -33
 
                         Component.onCompleted: play(
                             "qrc:/assets/sprites/cat_sleep.png", 6, 350, true)
@@ -161,7 +154,7 @@ ApplicationWindow {
 
                         Text {
                             width: parent.width
-                            text: "Ваш личный хранитель перерывов"
+                            text: appController.translations["tagline"]
                             color: "#D8CEDD"
                             font.pixelSize: 17
                             wrapMode: Text.WordWrap
@@ -197,12 +190,12 @@ ApplicationWindow {
                             spacing: 2
                             Text {
                                 text: {
-                                    if (appController.paused) return "Таймер приостановлен"
-                                    if (appController.phase === "work") return "Рабочий цикл"
-                                    if (appController.phase === "rest") return "Кот отдыхает"
-                                    if (appController.phase === "entering") return "Кот уже идёт"
-                                    if (appController.phase === "leaving") return "Перерыв закончен"
-                                    return "Настройте первый цикл"
+                                    if (appController.paused) return appController.translations["status.paused"]
+                                    if (appController.phase === "work") return appController.translations["status.work"]
+                                    if (appController.phase === "rest") return appController.translations["status.rest"]
+                                    if (appController.phase === "entering") return appController.translations["status.entering"]
+                                    if (appController.phase === "leaving") return appController.translations["status.leaving"]
+                                    return appController.translations["status.unconfigured"]
                                 }
                                 color: "#302B38"
                                 font.pixelSize: 15
@@ -210,8 +203,8 @@ ApplicationWindow {
                             }
                             Text {
                                 text: appController.configured
-                                    ? "Следующая смена режима произойдёт автоматически"
-                                    : "После сохранения приложение останется в системном трее"
+                                    ? appController.translations["status.nextAutomatic"]
+                                    : appController.translations["status.afterSaveTray"]
                                 color: "#807682"
                                 font.pixelSize: 12
                             }
@@ -230,7 +223,7 @@ ApplicationWindow {
                 }
 
                 SectionTitle {
-                    text: "Длительность цикла"
+                    text: appController.translations["section.cycle"]
                     Layout.leftMargin: 36
                     Layout.topMargin: 4
                 }
@@ -244,8 +237,8 @@ ApplicationWindow {
                     TimeCard {
                         id: workCard
                         Layout.fillWidth: true
-                        cardTitle: "Работа"
-                        cardSubtitle: "Сколько кот не будет вас беспокоить"
+                        cardTitle: appController.translations["work.title"]
+                        cardSubtitle: appController.translations["work.subtitle"]
                         value: appController.workMinutes
                         from: 1
                         to: 240
@@ -254,8 +247,8 @@ ApplicationWindow {
                     TimeCard {
                         id: restCard
                         Layout.fillWidth: true
-                        cardTitle: "Отдых"
-                        cardSubtitle: "Сколько кот будет спать на экране"
+                        cardTitle: appController.translations["rest.title"]
+                        cardSubtitle: appController.translations["rest.subtitle"]
                         value: appController.restMinutes
                         from: 1
                         to: 60
@@ -263,7 +256,7 @@ ApplicationWindow {
                 }
 
                 SectionTitle {
-                    text: "Поведение"
+                    text: appController.translations["section.behavior"]
                     Layout.leftMargin: 36
                     Layout.topMargin: 4
                 }
@@ -285,7 +278,7 @@ ApplicationWindow {
 
                         CheckBox {
                             id: dimCheck
-                            text: "Затемнять фон во время отдыха"
+                            text: appController.translations["behavior.dim"]
                             checked: appController.dimBackground
                             font.pixelSize: 14
                             Layout.fillWidth: true
@@ -293,7 +286,7 @@ ApplicationWindow {
 
                         CheckBox {
                             id: strictCheck
-                            text: "Строгий режим — для трудоголиков"
+                            text: appController.translations["behavior.strict"]
                             checked: appController.strictMode
                             font.pixelSize: 14
                             Layout.fillWidth: true
@@ -301,7 +294,7 @@ ApplicationWindow {
 
                         CheckBox {
                             id: autostartCheck
-                            text: "Запускать DeskCat вместе с Windows"
+                            text: appController.translations["behavior.autostart"]
                             checked: appController.autostart
                             font.pixelSize: 14
                             Layout.fillWidth: true
@@ -310,7 +303,7 @@ ApplicationWindow {
                 }
 
                 SectionTitle {
-                    text: "Звук"
+                    text: appController.translations["section.sound"]
                     Layout.leftMargin: 36
                     Layout.topMargin: 4
                 }
@@ -332,7 +325,7 @@ ApplicationWindow {
 
                         CheckBox {
                             id: walkingSoundsCheck
-                            text: "Звуки шагов во время ходьбы"
+                            text: appController.translations["sound.walkingSteps"]
                             checked: appController.walkingSounds
                             font.pixelSize: 14
                             Layout.fillWidth: true
@@ -340,7 +333,7 @@ ApplicationWindow {
 
                         CheckBox {
                             id: walkingPurrCheck
-                            text: "Мурчание во время ходьбы"
+                            text: appController.translations["sound.walkingPurr"]
                             checked: appController.walkingPurr
                             font.pixelSize: 14
                             Layout.fillWidth: true
@@ -348,10 +341,53 @@ ApplicationWindow {
 
                         CheckBox {
                             id: restPurrCheck
-                            text: "Мурчание во время перерыва"
+                            text: appController.translations["sound.restPurr"]
                             checked: appController.restPurr
                             font.pixelSize: 14
                             Layout.fillWidth: true
+                        }
+                    }
+                }
+
+                SectionTitle {
+                    text: appController.translations["section.language"]
+                    Layout.leftMargin: 36
+                    Layout.topMargin: 4
+                }
+
+                Rectangle {
+                    Layout.leftMargin: 32
+                    Layout.rightMargin: 32
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 76
+                    radius: 20
+                    color: "#FFFDFC"
+                    border.color: "#E7DDD2"
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 20
+                        anchors.rightMargin: 20
+
+                        Text {
+                            text: appController.translations["language.label"]
+                            color: "#302B38"
+                            font.pixelSize: 14
+                        }
+
+                        Item { Layout.fillWidth: true }
+
+                        ComboBox {
+                            id: languageCombo
+                            Layout.preferredWidth: 180
+                            textRole: "label"
+                            valueRole: "code"
+                            currentIndex: appController.language === "ru" ? 1 : 0
+                            model: ListModel {
+                                ListElement { label: "English"; code: "en" }
+                                ListElement { label: "Русский"; code: "ru" }
+                            }
+                            onActivated: appController.setLanguage(currentValue)
                         }
                     }
                 }
@@ -364,10 +400,10 @@ ApplicationWindow {
                     spacing: 12
 
                     Button {
-                        text: "Посмотреть перерыв"
+                        text: appController.translations["button.preview"]
                         Layout.preferredHeight: 52
                         Layout.preferredWidth: 220
-                        font.pixelSize: 15
+                        font.pixelSize: 16
 
                         background: Rectangle {
                             radius: 16
@@ -378,10 +414,13 @@ ApplicationWindow {
                     }
 
                     Button {
-                        text: appController.paused ? "Продолжить" : "Пауза"
+                        text: appController.paused
+                            ? appController.translations["button.resume"]
+                            : appController.translations["button.pause"]
                         visible: appController.phase === "work"
                         Layout.preferredHeight: 52
                         Layout.preferredWidth: 130
+                        font.pixelSize: 16
                         onClicked: appController.togglePause()
 
                         background: Rectangle {
@@ -394,11 +433,11 @@ ApplicationWindow {
 
                     Button {
                         text: appController.configured
-                            ? "Сохранить и перезапустить"
-                            : "Сохранить и начать"
+                            ? appController.translations["button.saveRestart"]
+                            : appController.translations["button.saveStart"]
                         Layout.preferredHeight: 52
                         Layout.preferredWidth: 230
-                        font.pixelSize: 15
+                        font.pixelSize: 16
                         font.weight: Font.DemiBold
                         palette.buttonText: "#FFFFFF"
 
