@@ -1,0 +1,61 @@
+FROM ubuntu:22.04
+
+ARG QT_VERSION=6.8.3
+ENV DEBIAN_FRONTEND=noninteractive
+ENV APPIMAGE_EXTRACT_AND_RUN=1
+ENV QT_ROOT=/opt/Qt/${QT_VERSION}/gcc_64
+ENV LINUXDEPLOY=/opt/linuxdeploy/linuxdeploy-x86_64.AppImage
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        ca-certificates \
+        curl \
+        file \
+        fuse \
+        libdbus-1-3 \
+        libegl1 \
+        libfontconfig1 \
+        libfuse2 \
+        libgl1 \
+        libgl1-mesa-dev \
+        libglib2.0-0 \
+        libpulse0 \
+        libwayland-client0 \
+        libwayland-cursor0 \
+        libwayland-egl1 \
+        libx11-6 \
+        libxcb-cursor0 \
+        libxcb-icccm4 \
+        libxcb-image0 \
+        libxcb-keysyms1 \
+        libxcb-randr0 \
+        libxcb-render-util0 \
+        libxcb-shape0 \
+        libxcb-xinerama0 \
+        libxcb-xkb1 \
+        libxkbcommon-x11-0 \
+        ninja-build \
+        patchelf \
+        python3-pip \
+        wget \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN python3 -m pip install --no-cache-dir \
+        "aqtinstall==3.3.0" \
+        "cmake==3.30.9" \
+    && aqt install-qt linux desktop "${QT_VERSION}" linux_gcc_64 \
+        --outputdir /opt/Qt \
+        --modules qtmultimedia
+
+RUN mkdir -p /opt/linuxdeploy \
+    && curl -fL \
+        https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage \
+        -o /opt/linuxdeploy/linuxdeploy-x86_64.AppImage \
+    && curl -fL \
+        https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage \
+        -o /opt/linuxdeploy/linuxdeploy-plugin-qt-x86_64.AppImage \
+    && chmod +x /opt/linuxdeploy/*.AppImage
+
+ENV PATH=/opt/linuxdeploy:${PATH}
+WORKDIR /workspace
+ENTRYPOINT ["bash", "packaging/linux/build-appimage.sh"]

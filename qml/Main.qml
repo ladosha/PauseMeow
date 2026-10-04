@@ -22,8 +22,13 @@ ApplicationWindow {
     }
 
     onClosing: function(close) {
-        close.accepted = false
-        appController.hideSettings()
+        if (appController.trayAvailable) {
+            close.accepted = false
+            appController.hideSettings()
+        } else {
+            close.accepted = true
+            appController.quitApplication()
+        }
     }
 
     component SectionTitle: Text {

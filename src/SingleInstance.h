@@ -2,6 +2,7 @@
 
 #include <QLocalServer>
 #include <QObject>
+#include <QString>
 
 class SingleInstance final : public QObject
 {
@@ -16,13 +17,15 @@ public:
 
     explicit SingleInstance(QObject *parent = nullptr);
 
-    [[nodiscard]] StartResult start();
+    [[nodiscard]] StartResult start(const QString &command = QStringLiteral("activate"));
 
 signals:
     void activationRequested();
+    void resetRequested();
+    void uninstallRequested();
 
 private:
-    [[nodiscard]] bool notifyRunningInstance() const;
+    [[nodiscard]] bool notifyRunningInstance(const QString &command) const;
     void acceptConnections();
 
     QLocalServer m_server;

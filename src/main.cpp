@@ -1,5 +1,6 @@
 #include "AppController.h"
 #include "SingleInstance.h"
+#include "PlatformIntegration.h"
 
 #include <QApplication>
 #include <QCommandLineOption>
@@ -10,7 +11,6 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickStyle>
-#include <QSettings>
 #include <QTimer>
 
 int main(int argc, char *argv[])
@@ -18,7 +18,10 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
     QApplication::setApplicationName(QStringLiteral("DeskCat"));
     QApplication::setOrganizationName(QStringLiteral("DeskCat"));
-    QApplication::setApplicationVersion(QStringLiteral("0.1.0"));
+    QApplication::setApplicationVersion(QStringLiteral(DESKCAT_VERSION));
+#ifdef Q_OS_LINUX
+    QApplication::setDesktopFileName(QStringLiteral("com.deskcat.DeskCat"));
+#endif
     QApplication::setWindowIcon(QIcon(QStringLiteral(":/assets/app_icon.png")));
     QApplication::setQuitOnLastWindowClosed(false);
 
@@ -34,11 +37,23 @@ int main(int argc, char *argv[])
         QStringLiteral("Load QML and exit automatically.")));
     parser.addOption(QCommandLineOption(
         QStringLiteral("reset-settings"),
-        QStringLiteral("Clear DeskCat application settings before launch.")));
+        QStringLiteral("Clear settings and remove DeskCat from autostart before launch.")));
+    parser.addOption(QCommandLineOption(
+        QStringLiteral("uninstall"),
+        QStringLiteral("Remove per-user DeskCat settings and autostart registration, then exit.")));
     parser.addOption(QCommandLineOption(
         QStringLiteral("background"),
         QStringLiteral("Start quietly when already configured.")));
+    parser.addOption(QCommandLineOption(
+        QStringLiteral("show-settings"),
+        QStringLiteral("Open the settings window after launch.")));
     parser.process(app);
+
+    const bool uninstallRequested = parser.isSet(QStringLiteral("uninstall"));
+    const bool resetRequested = parser.isSet(QStringLiteral("reset-settings"));
+    if (uninstallRequested || resetRequested) {
+        PlatformIntegration::resetUserState();
+    }
 
     const bool smokeTest = parser.isSet(QStringLiteral("smoke-test"));
     QPointer<AppController> controllerInstance;
@@ -49,9 +64,23 @@ int main(int argc, char *argv[])
                 controllerInstance->showSettings();
             }
         });
+    QObject::connect(&singleInstance, &SingleInstance::resetRequested,
+        &app, [&controllerInstance] {
+            if (controllerInstance) {
+                controllerInstance->resetApplicationState();
+            }
+        });
+    QObject::connect(&singleInstance, &SingleInstance::uninstallRequested,
+        &app, [&app] {
+            PlatformIntegration::resetUserState();
+            app.quit();
+        });
 
     if (!smokeTest) {
-        switch (singleInstance.start()) {
+        const QString instanceCommand = uninstallRequested
+            ? QStringLiteral("uninstall")
+            : resetRequested ? QStringLiteral("reset") : QStringLiteral("activate");
+        switch (singleInstance.start(instanceCommand)) {
         case SingleInstance::StartResult::Secondary:
             return 0;
         case SingleInstance::StartResult::Error:
@@ -62,9 +91,8 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (parser.isSet(QStringLiteral("reset-settings"))) {
-        QSettings settings(QStringLiteral("DeskCat"), QStringLiteral("DeskCat"));
-        settings.clear();
+    if (uninstallRequested) {
+        return 0;
     }
 
     QQuickStyle::setStyle(QStringLiteral("Basic"));
@@ -84,6 +112,10 @@ int main(int argc, char *argv[])
     engine.loadFromModule(QStringLiteral("DeskCat"), QStringLiteral("Main"));
     if (engine.rootObjects().isEmpty()) {
         return 2;
+    }
+
+    if (parser.isSet(QStringLiteral("show-settings"))) {
+        controller.showSettings();
     }
 
     if (parser.isSet(QStringLiteral("demo"))) {

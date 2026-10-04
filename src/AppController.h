@@ -28,6 +28,7 @@ class AppController final : public QObject
     Q_PROPERTY(bool restPurr READ restPurr NOTIFY settingsChanged)
     Q_PROPERTY(bool configured READ configured NOTIFY configuredChanged)
     Q_PROPERTY(bool settingsVisible READ settingsVisible NOTIFY settingsVisibleChanged)
+    Q_PROPERTY(bool trayAvailable READ trayAvailable CONSTANT)
     Q_PROPERTY(QString language READ language WRITE setLanguage NOTIFY languageChanged)
     Q_PROPERTY(QVariantMap translations READ translations NOTIFY languageChanged)
 
@@ -49,6 +50,7 @@ public:
     [[nodiscard]] bool restPurr() const noexcept;
     [[nodiscard]] bool configured() const noexcept;
     [[nodiscard]] bool settingsVisible() const noexcept;
+    [[nodiscard]] bool trayAvailable() const noexcept;
     [[nodiscard]] QString language() const;
     [[nodiscard]] QVariantMap translations() const;
 
@@ -71,6 +73,7 @@ public:
     Q_INVOKABLE void registerCatClick();
     Q_INVOKABLE void togglePause();
     Q_INVOKABLE void quitApplication();
+    void resetApplicationState();
 
 signals:
     void phaseChanged();
@@ -89,7 +92,6 @@ private:
     void startWork();
     void createTrayIcon();
     void updateTray();
-    void setAutostartEnabled(bool enabled);
     [[nodiscard]] QString text(const QString &key) const;
     static QString formatSeconds(int totalSeconds);
     [[nodiscard]] QString phaseLabel(CountdownTimer::Phase phase, bool paused) const;
@@ -100,7 +102,7 @@ private:
     int m_previewRestSeconds = 0;
     bool m_dimBackground = true;
     bool m_strictMode = false;
-    bool m_autostart = true;
+    bool m_autostart = false;
     bool m_walkingSounds = true;
     bool m_walkingPurr = true;
     bool m_restPurr = true;

@@ -15,9 +15,9 @@ SingleInstance::SingleInstance(QObject *parent)
         this, &SingleInstance::acceptConnections);
 }
 
-SingleInstance::StartResult SingleInstance::start()
+SingleInstance::StartResult SingleInstance::start(const QString &command)
 {
-    if (notifyRunningInstance()) {
+    if (notifyRunningInstance(command)) {
         return StartResult::Secondary;
     }
 
@@ -28,7 +28,7 @@ SingleInstance::StartResult SingleInstance::start()
 
     // Another process may have won the race between our connection and
     // listen attempts. Try it once more before treating the endpoint as stale.
-    if (notifyRunningInstance()) {
+    if (notifyRunningInstance(command)) {
         return StartResult::Secondary;
     }
 
@@ -38,7 +38,7 @@ SingleInstance::StartResult SingleInstance::start()
         : StartResult::Error;
 }
 
-bool SingleInstance::notifyRunningInstance() const
+bool SingleInstance::notifyRunningInstance(const QString &command) const
 {
     QLocalSocket socket;
     socket.connectToServer(
@@ -47,7 +47,8 @@ bool SingleInstance::notifyRunningInstance() const
         return false;
     }
 
-    socket.write("activate\n");
+    socket.write(command.toUtf8());
+    socket.write("\n");
     socket.waitForBytesWritten(ConnectionTimeoutMs);
     socket.disconnectFromServer();
     return true;
@@ -55,20 +56,26 @@ bool SingleInstance::notifyRunningInstance() const
 
 void SingleInstance::acceptConnections()
 {
-    bool acceptedConnection = false;
     while (m_server.hasPendingConnections()) {
         QLocalSocket *socket = m_server.nextPendingConnection();
         if (!socket) {
             continue;
         }
 
-        acceptedConnection = true;
+        if (socket->bytesAvailable() == 0) {
+            socket->waitForReadyRead(ConnectionTimeoutMs);
+        }
+        const QString command = QString::fromUtf8(socket->readAll()).trimmed();
         connect(socket, &QLocalSocket::disconnected,
             socket, &QObject::deleteLater);
         socket->disconnectFromServer();
-    }
 
-    if (acceptedConnection) {
-        emit activationRequested();
+        if (command == QStringLiteral("reset")) {
+            emit resetRequested();
+        } else if (command == QStringLiteral("uninstall")) {
+            emit uninstallRequested();
+        } else {
+            emit activationRequested();
+        }
     }
 }

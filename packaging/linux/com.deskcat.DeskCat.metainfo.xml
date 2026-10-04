@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.deskcat.DeskCat</id>
+  <name>DeskCat</name>
+  <summary>A friendly work and break timer</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>LicenseRef-proprietary</project_license>
+  <description>
+    <p>
+      DeskCat helps you alternate focused work with regular breaks. An animated
+      cat walks onto every connected screen, dims the desktop, and stays with
+      you until the break is over.
+    </p>
+    <p>
+      Work and break durations, strict mode, sounds, autostart, and background
+      dimming can all be configured from the settings window or system tray.
+    </p>
+  </description>
+  <launchable type="desktop-id">com.deskcat.DeskCat.desktop</launchable>
+  <provides>
+    <binary>deskcat</binary>
+  </provides>
+  <categories>
+    <category>Utility</category>
+  </categories>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="0.1.0" date="2026-10-03" />
+  </releases>
+</component>

@@ -1,6 +1,7 @@
 /.qt/
 /.tools/
 /build/
+/build-linux-*/
 /dist/
 /.vs/
 /.idea/

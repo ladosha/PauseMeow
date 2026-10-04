@@ -1,9 +1,9 @@
 #include "AppController.h"
+#include "PlatformIntegration.h"
 
 #include <QAction>
 #include <QApplication>
 #include <QCoreApplication>
-#include <QDir>
 #include <QIcon>
 #include <QMenu>
 #include <QSettings>
@@ -33,7 +33,7 @@ const QVariantMap EnglishTranslations {
     {QStringLiteral("section.behavior"), QStringLiteral("Behavior")},
     {QStringLiteral("behavior.dim"), QStringLiteral("Dim the background during breaks")},
     {QStringLiteral("behavior.strict"), QStringLiteral("Strict mode — for workaholics")},
-    {QStringLiteral("behavior.autostart"), QStringLiteral("Start DeskCat with Windows")},
+    {QStringLiteral("behavior.autostart"), QStringLiteral("Start DeskCat when you sign in")},
     {QStringLiteral("section.sound"), QStringLiteral("Sound")},
     {QStringLiteral("sound.walkingSteps"), QStringLiteral("Footstep sounds while walking")},
     {QStringLiteral("sound.walkingPurr"), QStringLiteral("Purring while walking")},
@@ -87,7 +87,7 @@ const QVariantMap RussianTranslations {
     {QStringLiteral("section.behavior"), QStringLiteral("Поведение")},
     {QStringLiteral("behavior.dim"), QStringLiteral("Затемнять фон во время отдыха")},
     {QStringLiteral("behavior.strict"), QStringLiteral("Строгий режим — для трудоголиков")},
-    {QStringLiteral("behavior.autostart"), QStringLiteral("Запускать DeskCat вместе с Windows")},
+    {QStringLiteral("behavior.autostart"), QStringLiteral("Запускать DeskCat при входе в систему")},
     {QStringLiteral("section.sound"), QStringLiteral("Звук")},
     {QStringLiteral("sound.walkingSteps"), QStringLiteral("Звуки шагов во время ходьбы")},
     {QStringLiteral("sound.walkingPurr"), QStringLiteral("Мурчание во время ходьбы")},
@@ -148,7 +148,8 @@ AppController::AppController(const bool trayEnabled, QObject *parent)
 
     if (m_configured) {
         QTimer::singleShot(0, this, &AppController::startWork);
-    } else {
+    }
+    if (!m_configured || (m_trayEnabled && !m_trayIcon)) {
         m_settingsVisible = true;
     }
 }
@@ -237,6 +238,11 @@ bool AppController::settingsVisible() const noexcept
     return m_settingsVisible;
 }
 
+bool AppController::trayAvailable() const noexcept
+{
+    return m_trayIcon != nullptr;
+}
+
 QString AppController::language() const
 {
     return m_language;
@@ -263,7 +269,10 @@ void AppController::applySettings(
     m_restMinutes = qBound(1, restMinutes, 60);
     m_dimBackground = dimBackground;
     m_strictMode = strictMode;
-    m_autostart = autostart;
+    const bool previousAutostart = m_autostart;
+    m_autostart = PlatformIntegration::setAutostartEnabled(autostart)
+        ? autostart
+        : previousAutostart;
     m_walkingSounds = walkingSounds;
     m_walkingPurr = walkingPurr;
     m_restPurr = restPurr;
@@ -275,7 +284,6 @@ void AppController::applySettings(
     }
 
     saveSettings();
-    setAutostartEnabled(m_autostart);
     hideSettings();
     startWork();
 }
@@ -388,6 +396,34 @@ void AppController::quitApplication()
     QCoreApplication::quit();
 }
 
+void AppController::resetApplicationState()
+{
+    PlatformIntegration::resetUserState();
+    m_timer.stop();
+    m_recentClicks.clear();
+    m_previewRestSeconds = 0;
+
+    m_workMinutes = 45;
+    m_restMinutes = 10;
+    m_dimBackground = true;
+    m_strictMode = false;
+    m_autostart = false;
+    m_walkingSounds = true;
+    m_walkingPurr = true;
+    m_restPurr = true;
+    m_language = QStringLiteral("en");
+
+    const bool wasConfigured = m_configured;
+    m_configured = false;
+    emit settingsChanged();
+    emit languageChanged();
+    if (wasConfigured) {
+        emit configuredChanged();
+    }
+    updateTray();
+    showSettings();
+}
+
 void AppController::loadSettings()
 {
     QSettings settings(OrganizationName, ApplicationName);
@@ -396,7 +432,7 @@ void AppController::loadSettings()
     m_restMinutes = settings.value(QStringLiteral("restMinutes"), 10).toInt();
     m_dimBackground = settings.value(QStringLiteral("dimBackground"), true).toBool();
     m_strictMode = settings.value(QStringLiteral("strictMode"), false).toBool();
-    m_autostart = settings.value(QStringLiteral("autostart"), true).toBool();
+    m_autostart = settings.value(QStringLiteral("autostart"), false).toBool();
     m_walkingSounds = settings.value(QStringLiteral("walkingSounds"), true).toBool();
     m_walkingPurr = settings.value(QStringLiteral("walkingPurr"), true).toBool();
     m_restPurr = settings.value(QStringLiteral("restPurr"), true).toBool();
@@ -483,25 +519,6 @@ void AppController::updateTray()
             ? text(QStringLiteral("tray.resume"))
             : text(QStringLiteral("tray.pause")));
     }
-}
-
-void AppController::setAutostartEnabled(const bool enabled)
-{
-#ifdef Q_OS_WIN
-    QSettings runKey(
-        QStringLiteral("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"),
-        QSettings::NativeFormat);
-    if (enabled) {
-        const QString executable = QDir::toNativeSeparators(
-            QCoreApplication::applicationFilePath());
-        runKey.setValue(QStringLiteral("DeskCat"),
-            QStringLiteral("\"%1\" --background").arg(executable));
-    } else {
-        runKey.remove(QStringLiteral("DeskCat"));
-    }
-#else
-    Q_UNUSED(enabled)
-#endif
 }
 
 QString AppController::formatSeconds(const int totalSeconds)

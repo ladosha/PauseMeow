@@ -1,0 +1,11 @@
+.git
+.qt
+.tools
+.vs
+.idea
+artifacts
+build
+build-*
+dist
+cat_ref.jpeg
+*.user

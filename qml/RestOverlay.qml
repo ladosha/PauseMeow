@@ -41,6 +41,15 @@ Window {
     }
 
     screen: targetScreen
+    // Full-screen windows are normally resized by the window system. Some
+    // remote-desktop mode changes (notably Parsec on Windows) update the
+    // QScreen while leaving an existing full-screen window at its old size.
+    // Keeping the requested geometry bound to QScreen also covers X11 and
+    // Wayland screen-mode changes through Qt's platform abstraction.
+    x: targetScreen ? targetScreen.geometry.x : 0
+    y: targetScreen ? targetScreen.geometry.y : 0
+    width: targetScreen ? Math.max(1, targetScreen.geometry.width) : 1
+    height: targetScreen ? Math.max(1, targetScreen.geometry.height) : 1
     visibility: shouldShow ? Window.FullScreen : Window.Hidden
     flags: Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool
     color: "transparent"
@@ -55,6 +64,29 @@ Window {
     function centerCat() {
         cat.x = root.width / 2 - cat.width / 2
         cat.y = root.height * 0.48 - cat.height / 2
+    }
+
+    function scheduleScreenRelayout() {
+        // Display backends can publish position, size, and DPI as separate
+        // changes. Coalesce them so content is laid out using the final size.
+        screenRelayoutTimer.restart()
+    }
+
+    function relayoutForCurrentScreen() {
+        if (!shouldShow)
+            return
+
+        if (primaryOverlay) {
+            if (appController.phase === "entering") {
+                startEntering()
+            } else if (appController.phase === "leaving") {
+                startLeaving()
+            } else {
+                centerCat()
+            }
+        }
+
+        raise()
     }
 
     function playSleep() {
@@ -397,6 +429,40 @@ Window {
                 root.playSleep()
         }
     }
+
+    Timer {
+        id: screenRelayoutTimer
+        interval: 50
+        repeat: false
+        onTriggered: root.relayoutForCurrentScreen()
+    }
+
+    Connections {
+        target: root.targetScreen
+
+        function onGeometryChanged() {
+            root.scheduleScreenRelayout()
+        }
+
+        function onAvailableGeometryChanged() {
+            root.scheduleScreenRelayout()
+        }
+
+        function onVirtualGeometryChanged() {
+            root.scheduleScreenRelayout()
+        }
+
+        function onLogicalDotsPerInchChanged() {
+            root.scheduleScreenRelayout()
+        }
+
+        function onOrientationChanged() {
+            root.scheduleScreenRelayout()
+        }
+    }
+
+    onWidthChanged: scheduleScreenRelayout()
+    onHeightChanged: scheduleScreenRelayout()
 
     Connections {
         target: appController
