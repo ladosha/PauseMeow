@@ -36,6 +36,8 @@ qt_add_executable(DeskCat WIN32
     src/SingleInstance.h
     src/PlatformIntegration.cpp
     src/PlatformIntegration.h
+    src/OverlayGeometryController.cpp
+    src/OverlayGeometryController.h
 )
 
 if(WIN32)

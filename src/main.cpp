@@ -1,4 +1,5 @@
 #include "AppController.h"
+#include "OverlayGeometryController.h"
 #include "SingleInstance.h"
 #include "PlatformIntegration.h"
 
@@ -98,11 +99,15 @@ int main(int argc, char *argv[])
     QQuickStyle::setStyle(QStringLiteral("Basic"));
 
     AppController controller(!smokeTest);
+    OverlayGeometryController overlayGeometryController;
     controllerInstance = &controller;
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty(
         QStringLiteral("appController"),
         &controller);
+    engine.rootContext()->setContextProperty(
+        QStringLiteral("overlayGeometryController"),
+        &overlayGeometryController);
 
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
         &app, [] {

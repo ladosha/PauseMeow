@@ -593,6 +593,29 @@ Windows предпочтительнее native smoke-test; `QT_QPA_PLATFORM=off
 - Не удалять пользовательские изменения и не применять `git reset --hard`.
 - Для поиска использовать `rg`.
 - Для текстовых правок использовать `apply_patch`.
+- Release-сборка тестов не находит Qt DLL автоматически, потому что локальный
+  Qt находится в `.qt\6.8.3\msvc2022_64\bin`, а этот каталог не добавлен в
+  `PATH`. Если обычный `ctest` завершается с кодом `0xc0000135`, это означает
+  ошибку загрузки DLL, а не падение самих тестов. Запускать тесты так:
+
+  ```powershell
+  $qtRuntime = Join-Path $PWD ".qt\6.8.3\msvc2022_64\bin"
+  cmake -E env "PATH=$qtRuntime;$env:PATH" `
+    ctest --test-dir build -C Release --output-on-failure
+  ```
+
+  Для headless smoke test использовать тот же runtime path:
+
+  ```powershell
+  cmake -E env "PATH=$qtRuntime;$env:PATH" `
+    "QT_QPA_PLATFORM=offscreen" `
+    .\build\Release\DeskCat.exe --smoke-test
+  ```
+- `cmake --build` обновляет только `build\Release\DeskCat.exe`; он не копирует
+  новый бинарник автоматически в `dist\DeskCat.exe` или
+  `artifacts\windows\DeskCat\DeskCat.exe`. Перед ручной проверкой исправления
+  убедиться, что запускается свежий build, либо явно обновить portable-копию и
+  сверить SHA-256. Иначе можно ошибочно тестировать старую версию приложения.
 - PowerShell в этой среде иногда показывает корректные UTF-8 русские строки
   как mojibake (`РљРѕС‚...`). Скриншоты приложения подтверждают, что сами файлы
   и QML-строки корректны. При чтении можно явно указывать `-Encoding UTF8`; не

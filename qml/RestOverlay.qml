@@ -12,6 +12,9 @@ Window {
         || appController.phase === "rest"
         || appController.phase === "leaving"
     property string responseMode: ""
+    property bool refreshingFullscreen: false
+    readonly property bool compositorManagedFullscreen:
+        Qt.platform.pluginName.indexOf("wayland") !== -1
 
     MediaPlayer {
         id: walkingSound
@@ -41,16 +44,22 @@ Window {
     }
 
     screen: targetScreen
-    // Full-screen windows are normally resized by the window system. Some
-    // remote-desktop mode changes (notably Parsec on Windows) update the
-    // QScreen while leaving an existing full-screen window at its old size.
-    // Keeping the requested geometry bound to QScreen also covers X11 and
-    // Wayland screen-mode changes through Qt's platform abstraction.
+    // Windows can keep the native size that was active when a window first
+    // entered full-screen mode (for example across a Parsec mode switch).
+    // Use an explicitly sized borderless window on Windows and X11 so live
+    // QScreen geometry remains authoritative. Wayland does not permit clients
+    // to position top-level windows, so its compositor must manage full-screen.
     x: targetScreen ? targetScreen.geometry.x : 0
     y: targetScreen ? targetScreen.geometry.y : 0
     width: targetScreen ? Math.max(1, targetScreen.geometry.width) : 1
     height: targetScreen ? Math.max(1, targetScreen.geometry.height) : 1
-    visibility: shouldShow ? Window.FullScreen : Window.Hidden
+    visibility: {
+        if (!shouldShow)
+            return Window.Hidden
+        if (compositorManagedFullscreen && !refreshingFullscreen)
+            return Window.FullScreen
+        return Window.Windowed
+    }
     flags: Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool
     color: "transparent"
 
@@ -69,6 +78,8 @@ Window {
     function scheduleScreenRelayout() {
         // Display backends can publish position, size, and DPI as separate
         // changes. Coalesce them so content is laid out using the final size.
+        if (compositorManagedFullscreen && shouldShow)
+            refreshingFullscreen = true
         screenRelayoutTimer.restart()
     }
 
@@ -434,7 +445,10 @@ Window {
         id: screenRelayoutTimer
         interval: 50
         repeat: false
-        onTriggered: root.relayoutForCurrentScreen()
+        onTriggered: {
+            root.refreshingFullscreen = false
+            root.relayoutForCurrentScreen()
+        }
     }
 
     Connections {
@@ -496,5 +510,9 @@ Window {
         }
     }
 
-    Component.onCompleted: handlePhase()
+    Component.onCompleted: {
+        overlayGeometryController.registerWindow(root)
+        handlePhase()
+    }
+    Component.onDestruction: overlayGeometryController.unregisterWindow(root)
 }
