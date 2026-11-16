@@ -24,6 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libwayland-cursor0 \
         libwayland-egl1 \
         libx11-6 \
+        libxrandr2 \
         libxcb-cursor0 \
         libxcb-icccm4 \
         libxcb-image0 \

@@ -11,9 +11,29 @@
 #include <QTimer>
 
 namespace {
-constexpr auto OrganizationName = "PauseMeow";
-constexpr auto ApplicationName = "PauseMeow";
 constexpr int BreakMessageMaxLength = 120;
+
+QString settingsOrganization()
+{
+#ifdef PAUSEMEOW_TESTING
+    const QString override = qEnvironmentVariable("PAUSEMEOW_TEST_ORGANIZATION");
+    if (!override.isEmpty()) {
+        return override;
+    }
+#endif
+    return QStringLiteral("PauseMeow");
+}
+
+QString settingsApplication()
+{
+#ifdef PAUSEMEOW_TESTING
+    const QString override = qEnvironmentVariable("PAUSEMEOW_TEST_APPLICATION");
+    if (!override.isEmpty()) {
+        return override;
+    }
+#endif
+    return QStringLiteral("PauseMeow");
+}
 
 QString normalizeBreakMessage(const QString &message)
 {
@@ -382,7 +402,7 @@ void AppController::setLanguage(const QString &language)
     }
 
     m_language = normalized;
-    QSettings settings(OrganizationName, ApplicationName);
+    QSettings settings(settingsOrganization(), settingsApplication());
     settings.setValue(QStringLiteral("language"), m_language);
     emit languageChanged();
     updateTray();
@@ -516,7 +536,7 @@ void AppController::resetApplicationState()
 
 void AppController::loadSettings()
 {
-    QSettings settings(OrganizationName, ApplicationName);
+    QSettings settings(settingsOrganization(), settingsApplication());
     m_configured = settings.value(QStringLiteral("configured"), false).toBool();
     m_workMinutes = settings.value(QStringLiteral("workMinutes"), 45).toInt();
     m_restMinutes = settings.value(QStringLiteral("restMinutes"), 10).toInt();
@@ -524,7 +544,12 @@ void AppController::loadSettings()
         settings.value(QStringLiteral("breakMessage")).toString());
     m_dimBackground = settings.value(QStringLiteral("dimBackground"), true).toBool();
     m_strictMode = settings.value(QStringLiteral("strictMode"), false).toBool();
-    m_autostart = settings.value(QStringLiteral("autostart"), false).toBool();
+    const bool savedAutostart = settings.value(
+        QStringLiteral("autostart"), false).toBool();
+    m_autostart = PlatformIntegration::reconcileAutostartEnabled(savedAutostart);
+    if (m_autostart != savedAutostart) {
+        settings.setValue(QStringLiteral("autostart"), m_autostart);
+    }
     m_walkingSounds = settings.value(QStringLiteral("walkingSounds"), true).toBool();
     m_walkingPurr = settings.value(QStringLiteral("walkingPurr"), true).toBool();
     m_restPurr = settings.value(QStringLiteral("restPurr"), true).toBool();
@@ -537,7 +562,7 @@ void AppController::loadSettings()
 
 void AppController::saveSettings()
 {
-    QSettings settings(OrganizationName, ApplicationName);
+    QSettings settings(settingsOrganization(), settingsApplication());
     settings.setValue(QStringLiteral("configured"), m_configured);
     settings.setValue(QStringLiteral("workMinutes"), m_workMinutes);
     settings.setValue(QStringLiteral("restMinutes"), m_restMinutes);

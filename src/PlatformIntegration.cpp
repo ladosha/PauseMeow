@@ -1,4 +1,5 @@
 #include "PlatformIntegration.h"
+#include "AutostartEntry.h"
 
 #include <QCoreApplication>
 #include <QDir>
@@ -21,10 +22,40 @@
 #endif
 
 namespace {
-constexpr auto OrganizationName = "PauseMeow";
-constexpr auto ApplicationName = "PauseMeow";
-constexpr auto AutostartValueName = "PauseMeow";
 constexpr auto DesktopId = "com.vladmas.PauseMeow";
+
+QString settingsOrganization()
+{
+#ifdef PAUSEMEOW_TESTING
+    const QString override = qEnvironmentVariable("PAUSEMEOW_TEST_ORGANIZATION");
+    if (!override.isEmpty()) {
+        return override;
+    }
+#endif
+    return QStringLiteral("PauseMeow");
+}
+
+QString settingsApplication()
+{
+#ifdef PAUSEMEOW_TESTING
+    const QString override = qEnvironmentVariable("PAUSEMEOW_TEST_APPLICATION");
+    if (!override.isEmpty()) {
+        return override;
+    }
+#endif
+    return QStringLiteral("PauseMeow");
+}
+
+QString autostartValueName()
+{
+#ifdef PAUSEMEOW_TESTING
+    const QString override = qEnvironmentVariable("PAUSEMEOW_TEST_AUTOSTART_VALUE");
+    if (!override.isEmpty()) {
+        return override;
+    }
+#endif
+    return QStringLiteral("PauseMeow");
+}
 
 #ifdef Q_OS_LINUX
 constexpr auto PortalService = "org.freedesktop.portal.Desktop";
@@ -53,16 +84,6 @@ public slots:
 signals:
     void finished();
 };
-
-QString quoteDesktopExecArgument(QString argument)
-{
-    argument.replace(QLatin1Char('\\'), QStringLiteral("\\\\"));
-    argument.replace(QLatin1Char('"'), QStringLiteral("\\\""));
-    argument.replace(QLatin1Char('`'), QStringLiteral("\\`"));
-    argument.replace(QLatin1Char('$'), QStringLiteral("\\$"));
-    argument.replace(QLatin1Char('%'), QStringLiteral("%%"));
-    return QStringLiteral("\"%1\"").arg(argument);
-}
 
 QString nativeAutostartPath()
 {
@@ -98,19 +119,7 @@ bool setNativeLinuxAutostart(const bool enabled)
         return false;
     }
 
-    const QString contents = QStringLiteral(
-        "[Desktop Entry]\n"
-        "Type=Application\n"
-        "Version=1.0\n"
-        "Name=PauseMeow\n"
-        "Comment=Work and break timer\n"
-        "Exec=%1 --background\n"
-        "Icon=%2\n"
-        "Terminal=false\n"
-        "StartupNotify=false\n"
-        "X-GNOME-Autostart-enabled=true\n")
-        .arg(quoteDesktopExecArgument(linuxLaunchExecutable()),
-            QString::fromLatin1(DesktopId));
+    const QString contents = AutostartEntry::build(linuxLaunchExecutable());
 
     QSaveFile desktopFile(autostartPath);
     if (!desktopFile.open(QIODevice::WriteOnly | QIODevice::Text)
@@ -119,6 +128,30 @@ bool setNativeLinuxAutostart(const bool enabled)
         return false;
     }
     return desktopFile.commit();
+}
+
+bool reconcileNativeLinuxAutostart()
+{
+    QFile desktopFile(nativeAutostartPath());
+    if (!desktopFile.exists()) {
+        return false;
+    }
+    if (!desktopFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return false;
+    }
+
+    const AutostartEntry::State state = AutostartEntry::inspect(
+        QString::fromUtf8(desktopFile.readAll()), linuxLaunchExecutable());
+    switch (state) {
+    case AutostartEntry::State::Enabled:
+        return true;
+    case AutostartEntry::State::Stale:
+        return setNativeLinuxAutostart(true);
+    case AutostartEntry::State::Disabled:
+    case AutostartEntry::State::Invalid:
+        return false;
+    }
+    return false;
 }
 
 bool requestFlatpakAutostart(const bool enabled)
@@ -221,10 +254,10 @@ bool PlatformIntegration::setAutostartEnabled(const bool enabled)
     if (enabled) {
         const QString executable = QDir::toNativeSeparators(
             QCoreApplication::applicationFilePath());
-        runKey.setValue(QString::fromLatin1(AutostartValueName),
+        runKey.setValue(autostartValueName(),
             QStringLiteral("\"%1\" --background").arg(executable));
     } else {
-        runKey.remove(QString::fromLatin1(AutostartValueName));
+        runKey.remove(autostartValueName());
     }
     runKey.sync();
     return runKey.status() == QSettings::NoError;
@@ -238,14 +271,42 @@ bool PlatformIntegration::setAutostartEnabled(const bool enabled)
 #endif
 }
 
+bool PlatformIntegration::reconcileAutostartEnabled(const bool savedEnabled)
+{
+#ifdef Q_OS_WIN
+    QSettings runKey(
+        QStringLiteral("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"),
+        QSettings::NativeFormat);
+    const QString valueName = autostartValueName();
+    if (!runKey.contains(valueName)) {
+        return false;
+    }
+
+    const QString executable = QDir::toNativeSeparators(
+        QCoreApplication::applicationFilePath());
+    const QString expected = QStringLiteral("\"%1\" --background").arg(executable);
+    if (runKey.value(valueName).toString() != expected) {
+        runKey.setValue(valueName, expected);
+        runKey.sync();
+    }
+    return runKey.status() == QSettings::NoError;
+#elif defined(Q_OS_LINUX)
+    if (qEnvironmentVariableIsSet("FLATPAK_ID")) {
+        return savedEnabled;
+    }
+    return reconcileNativeLinuxAutostart();
+#else
+    Q_UNUSED(savedEnabled);
+    return false;
+#endif
+}
+
 void PlatformIntegration::resetUserState()
 {
     // Autostart is stored outside QSettings on every supported platform.
     (void)setAutostartEnabled(false);
 
-    QSettings settings(
-        QString::fromLatin1(OrganizationName),
-        QString::fromLatin1(ApplicationName));
+    QSettings settings(settingsOrganization(), settingsApplication());
     settings.clear();
     settings.sync();
 }

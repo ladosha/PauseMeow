@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.24)
 
-project(PauseMeow VERSION 0.1.0 LANGUAGES CXX)
+project(PauseMeow VERSION 1.0.0 LANGUAGES CXX)
 
 include(GNUInstallDirs)
 
@@ -34,6 +34,8 @@ qt_add_executable(PauseMeow WIN32
     src/CountdownTimer.h
     src/SingleInstance.cpp
     src/SingleInstance.h
+    src/AutostartEntry.cpp
+    src/AutostartEntry.h
     src/PlatformIntegration.cpp
     src/PlatformIntegration.h
     src/OverlayGeometryController.cpp
@@ -112,6 +114,19 @@ if(UNIX AND NOT APPLE)
         DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/256x256/apps"
         RENAME com.vladmas.PauseMeow.png
     )
+    install(FILES LICENSE
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/licenses/PauseMeow"
+    )
+    install(DIRECTORY THIRD_PARTY_LICENSES
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/licenses/PauseMeow"
+    )
+    install(FILES
+        README.md
+        ASSET_PROVENANCE.md
+        PRIVACY.md
+        THIRD_PARTY_NOTICES.md
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/doc/PauseMeow"
+    )
 endif()
 
 include(CTest)
@@ -127,4 +142,46 @@ if(BUILD_TESTING)
     target_link_libraries(PauseMeowTests PRIVATE Qt6::Core Qt6::Test)
 
     add_test(NAME PauseMeowTests COMMAND PauseMeowTests)
+
+    qt_add_executable(PauseMeowAutostartTests
+        tests/tst_autostartentry.cpp
+        src/AutostartEntry.cpp
+        src/AutostartEntry.h
+    )
+    target_include_directories(PauseMeowAutostartTests PRIVATE src)
+    target_link_libraries(PauseMeowAutostartTests PRIVATE Qt6::Core Qt6::Test)
+
+    add_test(NAME PauseMeowAutostartTests COMMAND PauseMeowAutostartTests)
+
+    if(WIN32)
+        qt_add_executable(PauseMeowWindowsIntegrationTests
+            tests/tst_windowsintegration.cpp
+            src/AppController.cpp
+            src/AppController.h
+            src/CountdownTimer.cpp
+            src/CountdownTimer.h
+            src/PlatformIntegration.cpp
+            src/PlatformIntegration.h
+            src/AutostartEntry.cpp
+            src/AutostartEntry.h
+        )
+        target_include_directories(PauseMeowWindowsIntegrationTests PRIVATE src)
+        target_compile_definitions(PauseMeowWindowsIntegrationTests PRIVATE
+            PAUSEMEOW_TESTING
+        )
+        set_target_properties(PauseMeowWindowsIntegrationTests PROPERTIES
+            WIN32_EXECUTABLE FALSE
+        )
+        target_link_libraries(PauseMeowWindowsIntegrationTests PRIVATE
+            Qt6::Core
+            Qt6::Gui
+            Qt6::Test
+            Qt6::Widgets
+        )
+
+        add_test(
+            NAME PauseMeowWindowsIntegrationTests
+            COMMAND PauseMeowWindowsIntegrationTests
+        )
+    endif()
 endif()

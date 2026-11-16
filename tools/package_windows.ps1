@@ -4,7 +4,6 @@ param(
     [ValidateSet("Release", "RelWithDebInfo")]
     [string]$Configuration = "Release",
     [string]$QtBin = "",
-    [string]$InnoSetupCompiler = "",
     [string]$SignTool = "",
     [string]$CertificatePath = "",
     [string]$CertificateThumbprint = "",
@@ -22,13 +21,16 @@ if ([string]::IsNullOrWhiteSpace($BuildDir)) {
 }
 $BuildDir = [System.IO.Path]::GetFullPath($BuildDir)
 $artifactRoot = Join-Path $projectRoot "artifacts\windows"
-$stageDir = Join-Path $artifactRoot "PauseMeow"
 $cmakeLists = Get-Content (Join-Path $projectRoot "CMakeLists.txt") -Raw
 $versionMatch = [regex]::Match($cmakeLists, 'project\(PauseMeow VERSION ([0-9]+\.[0-9]+\.[0-9]+)')
 if (-not $versionMatch.Success) {
     throw "Could not read the PauseMeow version from CMakeLists.txt."
 }
 $appVersion = $versionMatch.Groups[1].Value
+$packageName = "PauseMeow-$appVersion-windows-x64-portable"
+$stageDir = Join-Path $artifactRoot $packageName
+$archivePath = Join-Path $artifactRoot "$packageName.zip"
+$checksumPath = Join-Path $artifactRoot "SHA256SUMS.txt"
 
 function Invoke-Checked {
     param(
@@ -61,29 +63,6 @@ function Find-SignTool {
         }
     }
     return ""
-}
-
-function Find-Iscc {
-    if (-not [string]::IsNullOrWhiteSpace($InnoSetupCompiler)) {
-        return $InnoSetupCompiler
-    }
-    $command = Get-Command "ISCC.exe" -ErrorAction SilentlyContinue
-    if ($command) {
-        return $command.Source
-    }
-    foreach ($candidate in @(
-        (Join-Path $projectRoot ".tools\InnoSetup7\ISCC.exe"),
-        (Join-Path $projectRoot ".tools\InnoSetup6\ISCC.exe"),
-        (Join-Path $env:ProgramFiles "Inno Setup 7\ISCC.exe"),
-        (Join-Path ${env:ProgramFiles(x86)} "Inno Setup 7\ISCC.exe"),
-        (Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"),
-        (Join-Path $env:ProgramFiles "Inno Setup 6\ISCC.exe")
-    )) {
-        if (Test-Path $candidate) {
-            return $candidate
-        }
-    }
-    throw "Inno Setup 6 or 7 was not found. Install it or pass -InnoSetupCompiler."
 }
 
 function Invoke-AuthenticodeSign {
@@ -164,24 +143,32 @@ New-Item -ItemType Directory -Force -Path $stageDir | Out-Null
 
 $stageExe = Join-Path $stageDir "PauseMeow.exe"
 Copy-Item -LiteralPath $builtExe -Destination $stageExe
+Copy-Item -LiteralPath (Join-Path $projectRoot "LICENSE") -Destination $stageDir
+Copy-Item `
+    -LiteralPath (Join-Path $projectRoot "THIRD_PARTY_LICENSES") `
+    -Destination (Join-Path $stageDir "THIRD_PARTY_LICENSES") `
+    -Recurse
+foreach ($notice in @(
+    "PORTABLE_README.md",
+    "README.md",
+    "ASSET_PROVENANCE.md",
+    "PRIVACY.md",
+    "THIRD_PARTY_NOTICES.md"
+)) {
+    Copy-Item -LiteralPath (Join-Path $projectRoot $notice) -Destination $stageDir
+}
 Invoke-Checked -FilePath $winDeployQt -ArgumentList @(
     "--release", "--qmldir", (Join-Path $projectRoot "qml"), "--dir", $stageDir, $stageExe
 )
 Invoke-AuthenticodeSign -Path $stageExe
 
-$iscc = Find-Iscc
-$installerScript = Join-Path $projectRoot "installer\PauseMeow.iss"
-Invoke-Checked -FilePath $iscc -ArgumentList @(
-    "/DAppVersion=$appVersion",
-    "/DSourceDir=$stageDir",
-    "/DOutputDir=$artifactRoot",
-    $installerScript
-)
-
-$installer = Join-Path $artifactRoot "PauseMeow-Setup-$appVersion-x64.exe"
-if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) {
-    throw "The installer was not created at the expected path: $installer"
+if (Test-Path -LiteralPath $archivePath) {
+    Remove-Item -LiteralPath $archivePath -Force
 }
-Invoke-AuthenticodeSign -Path $installer
+Compress-Archive -LiteralPath $stageDir -DestinationPath $archivePath -CompressionLevel Optimal
 
-Write-Host "Created and verified: $installer"
+$archiveHash = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
+Set-Content -LiteralPath $checksumPath -Value "$archiveHash  $packageName.zip" -Encoding ascii
+
+Write-Host "Created: $archivePath"
+Write-Host "Checksum: $checksumPath"

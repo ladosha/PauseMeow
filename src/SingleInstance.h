@@ -22,7 +22,6 @@ public:
 signals:
     void activationRequested();
     void resetRequested();
-    void uninstallRequested();
 
 private:
     [[nodiscard]] bool notifyRunningInstance(const QString &command) const;

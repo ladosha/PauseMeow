@@ -4,7 +4,7 @@
   <name>PauseMeow</name>
   <summary>A friendly work and break timer</summary>
   <metadata_license>CC0-1.0</metadata_license>
-  <project_license>LicenseRef-proprietary</project_license>
+  <project_license>MIT</project_license>
   <description>
     <p>
       PauseMeow helps you alternate focused work with regular breaks. An animated
@@ -25,6 +25,6 @@
   </categories>
   <content_rating type="oars-1.1" />
   <releases>
-    <release version="0.1.0" date="2026-10-03" />
+    <release version="1.0.0" date="2026-11-17" />
   </releases>
 </component>

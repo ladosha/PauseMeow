@@ -7,11 +7,13 @@
 #include <QCommandLineOption>
 #include <QCommandLineParser>
 #include <QDebug>
+#include <QFile>
 #include <QIcon>
 #include <QPointer>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickStyle>
+#include <QStringList>
 #include <QTimer>
 
 int main(int argc, char *argv[])
@@ -40,9 +42,6 @@ int main(int argc, char *argv[])
         QStringLiteral("reset-settings"),
         QStringLiteral("Clear settings and remove PauseMeow from autostart before launch.")));
     parser.addOption(QCommandLineOption(
-        QStringLiteral("uninstall"),
-        QStringLiteral("Remove per-user PauseMeow settings and autostart registration, then exit.")));
-    parser.addOption(QCommandLineOption(
         QStringLiteral("background"),
         QStringLiteral("Start quietly when already configured.")));
     parser.addOption(QCommandLineOption(
@@ -50,13 +49,34 @@ int main(int argc, char *argv[])
         QStringLiteral("Open the settings window after launch.")));
     parser.process(app);
 
-    const bool uninstallRequested = parser.isSet(QStringLiteral("uninstall"));
     const bool resetRequested = parser.isSet(QStringLiteral("reset-settings"));
-    if (uninstallRequested || resetRequested) {
+    if (resetRequested) {
         PlatformIntegration::resetUserState();
     }
 
     const bool smokeTest = parser.isSet(QStringLiteral("smoke-test"));
+    if (smokeTest) {
+        const QStringList requiredResources {
+            QStringLiteral(":/assets/app_icon.png"),
+            QStringLiteral(":/assets/audio/cat_steps.ogg"),
+            QStringLiteral(":/assets/audio/cat_purr.ogg"),
+            QStringLiteral(":/assets/audio/cat_meow.ogg"),
+            QStringLiteral(":/assets/sprites/cat_walk.png"),
+            QStringLiteral(":/assets/sprites/cat_lie_down.png"),
+            QStringLiteral(":/assets/sprites/cat_sleep.png"),
+            QStringLiteral(":/assets/sprites/cat_poke.png"),
+            QStringLiteral(":/assets/sprites/cat_hiss.png"),
+            QStringLiteral(":/assets/sprites/cat_settle.png"),
+            QStringLiteral(":/assets/sprites/cat_wake_yawn.png"),
+            QStringLiteral(":/assets/sprites/cat_turn.png"),
+        };
+        for (const QString &resource : requiredResources) {
+            if (!QFile::exists(resource)) {
+                qCritical() << "Required resource is missing:" << resource;
+                return 4;
+            }
+        }
+    }
     const bool backgroundRequested = parser.isSet(QStringLiteral("background"));
     QPointer<AppController> controllerInstance;
     SingleInstance singleInstance;
@@ -72,16 +92,9 @@ int main(int argc, char *argv[])
                 controllerInstance->resetApplicationState();
             }
         });
-    QObject::connect(&singleInstance, &SingleInstance::uninstallRequested,
-        &app, [&app] {
-            PlatformIntegration::resetUserState();
-            app.quit();
-        });
-
     if (!smokeTest) {
-        const QString instanceCommand = uninstallRequested
-            ? QStringLiteral("uninstall")
-            : resetRequested ? QStringLiteral("reset") : QStringLiteral("activate");
+        const QString instanceCommand = resetRequested
+            ? QStringLiteral("reset") : QStringLiteral("activate");
         switch (singleInstance.start(instanceCommand)) {
         case SingleInstance::StartResult::Secondary:
             return 0;
@@ -91,10 +104,6 @@ int main(int argc, char *argv[])
         case SingleInstance::StartResult::Primary:
             break;
         }
-    }
-
-    if (uninstallRequested) {
-        return 0;
     }
 
     QQuickStyle::setStyle(QStringLiteral("Basic"));

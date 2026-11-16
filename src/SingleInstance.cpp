@@ -72,8 +72,6 @@ void SingleInstance::acceptConnections()
 
         if (command == QStringLiteral("reset")) {
             emit resetRequested();
-        } else if (command == QStringLiteral("uninstall")) {
-            emit uninstallRequested();
         } else {
             emit activationRequested();
         }

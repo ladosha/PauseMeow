@@ -43,6 +43,13 @@ cp \
     "$app_dir/usr/share/metainfo/com.vladmas.PauseMeow.metainfo.xml" \
     "$app_dir/usr/share/metainfo/com.vladmas.PauseMeow.appdata.xml"
 
+# linuxdeploy-plugin-qt does not discover Qt Multimedia backends from QML
+# imports. Put the FFmpeg backend in Qt's deployed plugin tree explicitly and
+# ask linuxdeploy to collect its FFmpeg and other shared-library dependencies.
+multimedia_plugin="$app_dir/usr/plugins/multimedia/libffmpegmediaplugin.so"
+mkdir -p "$(dirname -- "$multimedia_plugin")"
+cp "$qt_root/plugins/multimedia/libffmpegmediaplugin.so" "$multimedia_plugin"
+
 export QML_SOURCES_PATHS="$project_root/qml"
 export QMAKE="$qt_root/bin/qmake"
 export LD_LIBRARY_PATH="$qt_root/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
@@ -55,8 +62,19 @@ export APPIMAGE_EXTRACT_AND_RUN=1
     cd "$artifact_dir"
     "$linuxdeploy" \
         --appdir "$app_dir" \
+        --deploy-deps-only "$multimedia_plugin" \
         --plugin qt \
         --output appimage
 )
+
+smoke_log="$(mktemp)"
+trap 'rm -f -- "$smoke_log"' EXIT
+QT_QPA_PLATFORM=offscreen \
+APPIMAGE_EXTRACT_AND_RUN=1 \
+    "$artifact_dir/$LDAI_OUTPUT" --smoke-test 2>&1 | tee "$smoke_log"
+if grep -Fq "No QtMultimedia backends found" "$smoke_log"; then
+    echo "The AppImage has no Qt Multimedia backend." >&2
+    exit 1
+fi
 
 echo "Created: $artifact_dir/$LDAI_OUTPUT"

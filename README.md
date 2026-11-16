@@ -4,10 +4,37 @@
   <img src="docs/cat-animation.webp" alt="PauseMeow animation" width="480">
 </p>
 
-PauseMeow is a lightweight work-and-break timer for Windows and Linux, built
-with C++20, Qt 6, and QML. After the initial setup, it stays in the system
-tray, counts down the work interval, and displays a full-screen cat during
-breaks.
+> **When the cat says pause.**
+
+PauseMeow is a free, local work-and-break timer for Windows and Linux. When
+your work interval ends, an animated cat takes over every monitor, dims the
+desktop, lies down, purrs, and stays until your break is over. It is built with
+C++20, Qt 6, and QML and works without an account or telemetry.
+
+## Download
+
+Download PauseMeow 1.0.0 from the
+[latest GitHub release](https://github.com/ladosha/PauseMeow/releases/latest).
+
+### Windows
+
+Download `PauseMeow-1.0.0-windows-x64-portable.zip`, extract the entire archive
+to a stable location, and run `PauseMeow.exe`. No installer or administrator
+access is required. The GitHub build is unsigned, so Windows may display a
+SmartScreen warning. The Microsoft Store release is coming soon.
+
+### Linux
+
+Download `PauseMeow-1.0.0-x86_64.AppImage`, make it executable, and run it:
+
+```bash
+chmod +x PauseMeow-1.0.0-x86_64.AppImage
+./PauseMeow-1.0.0-x86_64.AppImage
+```
+
+Keep a portable build in a stable location after enabling autostart. PauseMeow
+stores settings and autostart registration per user, outside the application
+directory.
 
 ## Features
 
@@ -25,6 +52,10 @@ breaks.
 - persistent settings and per-user autostart;
 - accurate monotonic-clock countdowns, including after the computer resumes
   from sleep.
+
+PauseMeow is designed around the cat interaction rather than as another generic
+Pomodoro interface: the cat enters, reacts to clicks, settles down, sleeps, and
+leaves when the break is complete.
 
 Run the prepared portable build from:
 
@@ -68,18 +99,51 @@ Sprites are stored in `assets/sprites`. Every frame uses a 640 x 640 px cell;
 the player scales them for the current screen resolution without modifying the
 source images.
 
-## Windows installer and signing
+## Windows portable package
 
-The release package is built by `tools/package_windows.ps1`. It creates a
-per-user Inno Setup installer, signs both `PauseMeow.exe` and the installer, and
-verifies their Authenticode signatures. The final wizard page contains a
-checked **Launch PauseMeow** option; that launch always opens the settings window.
+The GitHub Windows package is a portable x64 ZIP. An MSIX release in the
+Microsoft Store is coming soon.
 
-With a certificate from the Windows certificate store:
+Build the portable ZIP with the Qt runtime path supplied explicitly:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass `
   -File .\tools\package_windows.ps1 `
+  -QtBin "C:\Qt\6.8.3\msvc2022_64\bin" `
+  -AllowUnsigned
+```
+
+The script builds PauseMeow, deploys its Qt runtime and QML dependencies, and
+creates `artifacts\windows\PauseMeow-1.0.0-windows-x64-portable.zip` together
+with `SHA256SUMS.txt`.
+
+Run the complete Windows release gate—build, unit and integration tests,
+packaging, checksum/content validation, and a packaged smoke test—with:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File .\tools\test_windows_release.ps1 `
+  -QtBin "C:\Qt\6.8.3\msvc2022_64\bin"
+```
+
+After enabling Windows Sandbox, prepare and open the isolated release-test
+environment with:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File .\tools\start_windows_sandbox.ps1
+```
+
+The Sandbox configuration disables networking and maps only
+`artifacts\windows` as read-only.
+
+To sign `PauseMeow.exe` with a certificate from the Windows certificate store,
+omit `-AllowUnsigned` and supply its thumbprint:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File .\tools\package_windows.ps1 `
+  -QtBin "C:\Qt\6.8.3\msvc2022_64\bin" `
   -CertificateThumbprint "CERTIFICATE_SHA1_THUMBPRINT"
 ```
 
@@ -89,26 +153,25 @@ With a PFX file (keep its password outside the repository):
 $env:PAUSEMEOW_SIGN_PASSWORD = "PFX password"
 powershell.exe -NoProfile -ExecutionPolicy Bypass `
   -File .\tools\package_windows.ps1 `
+  -QtBin "C:\Qt\6.8.3\msvc2022_64\bin" `
   -CertificatePath "C:\certificates\pausemeow.pfx"
 Remove-Item Env:\PAUSEMEOW_SIGN_PASSWORD
 ```
 
-The script requires Inno Setup 6 or 7 and `signtool.exe` from the Windows SDK.
-Unsigned local packages are possible only when explicitly requested with
-`-AllowUnsigned`. Output is written to `artifacts\windows`.
+Signing requires `signtool.exe` from the Windows SDK. Unsigned local packages
+must be requested explicitly with `-AllowUnsigned`.
 
-The uninstaller removes the application files, shortcuts, saved settings, and
-the `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\PauseMeow` autostart
-value. `PauseMeow.exe --reset-settings` performs the same complete per-user state
-reset and then opens the initial settings screen. `PauseMeow.exe --uninstall` is
-the non-interactive cleanup entry point used by the uninstaller.
+To remove a portable copy completely, first run
+`PauseMeow.exe --reset-settings` to clear saved settings and the per-user
+autostart entry, exit PauseMeow, and then delete its extracted directory.
 
 ## Linux packages
 
-PauseMeow is available as both Flatpak and AppImage. The Linux build retains the
-system tray controls, per-user autostart, sounds, multi-monitor overlays, and
-background dimming. Native and AppImage installs use the XDG autostart
-directory; Flatpak uses the user-approved Background portal.
+The first GitHub release provides an AppImage. Flatpak build tooling is included
+for a future Flathub release. The Linux build retains the system tray controls,
+per-user autostart, sounds, multi-monitor overlays, and background dimming.
+Native and AppImage installs use the XDG autostart directory; Flatpak uses the
+user-approved Background portal.
 
 Linux binaries must be produced in a Linux environment. From Windows, the
 provided wrapper builds both formats in Linux containers through Docker
@@ -139,15 +202,15 @@ The packages are written to `artifacts/linux`. Install and run a local Flatpak
 bundle with:
 
 ```bash
-flatpak install --user artifacts/linux/PauseMeow-0.1.0-x86_64.flatpak
+flatpak install --user artifacts/linux/PauseMeow-1.0.0-x86_64.flatpak
 flatpak run com.vladmas.PauseMeow
 ```
 
 Run the AppImage with:
 
 ```bash
-chmod +x artifacts/linux/PauseMeow-0.1.0-x86_64.AppImage
-./artifacts/linux/PauseMeow-0.1.0-x86_64.AppImage
+chmod +x artifacts/linux/PauseMeow-1.0.0-x86_64.AppImage
+./artifacts/linux/PauseMeow-1.0.0-x86_64.AppImage
 ```
 
 On desktops without a status-tray implementation, PauseMeow keeps the settings
@@ -156,3 +219,41 @@ tray icon need a StatusNotifier/AppIndicator shell extension. Wayland controls
 window activation and stacking, so a compositor may limit whether a timed
 overlay can force itself above another full-screen application; X11 and KDE
 Plasma generally provide the most complete always-on-top behavior.
+
+## Support
+
+Before reporting a problem:
+
+1. Confirm that you are using the latest PauseMeow release.
+2. Restart PauseMeow and reproduce the problem.
+3. Record your operating-system version, PauseMeow version, monitor count and
+   layout, and exact reproduction steps.
+4. Include screenshots or relevant console output when they do not contain
+   private information.
+
+For Windows portable builds, keep the extracted directory in a stable location.
+If it is moved after autostart is enabled, launch PauseMeow once so it can repair
+the recorded startup path.
+
+For AppImages, ensure the file is executable and remains in a stable location.
+Desktop environments that do not implement the XDG autostart specification may
+require their own session-startup configuration.
+
+Use the [GitHub issue tracker](https://github.com/ladosha/PauseMeow/issues) for
+bug reports. The prepared form requests the information listed above.
+
+If PauseMeow helps you take better breaks, you can
+[buy the cat a treat on Ko-fi](https://ko-fi.com/vladmas).
+
+## License
+
+PauseMeow source code and all project-owned AI-generated audio and image assets
+are available under the [MIT License](LICENSE). See
+[Asset provenance](ASSET_PROVENANCE.md) for details.
+
+Qt, FFmpeg, and other bundled runtime components retain their own licenses. See
+[Third-party notices](THIRD_PARTY_NOTICES.md).
+
+Additional project information:
+
+- [Privacy](PRIVACY.md)
