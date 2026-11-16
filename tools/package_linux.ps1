@@ -16,7 +16,7 @@ if ($Format -in @("AppImage", "All")) {
 
     docker build `
         --file (Join-Path $projectRoot "packaging\linux\Dockerfile.appimage") `
-        --tag deskcat-appimage-builder `
+        --tag pausemeow-appimage-builder `
         $projectRoot
     if ($LASTEXITCODE -ne 0) {
         throw "The AppImage builder image failed to build."
@@ -24,7 +24,7 @@ if ($Format -in @("AppImage", "All")) {
 
     docker run --rm `
         --volume "${projectRoot}:/workspace" `
-        deskcat-appimage-builder
+        pausemeow-appimage-builder
     if ($LASTEXITCODE -ne 0) {
         throw "The AppImage build failed."
     }
@@ -38,7 +38,6 @@ if ($Format -in @("Flatpak", "All")) {
     docker run --rm --privileged `
         --volume "${projectRoot}:/workspace" `
         --workdir /workspace `
-        --env DESKCAT_FLATPAK_SYSTEM=1 `
         --entrypoint bash `
         ghcr.io/flathub-infra/flatpak-github-actions:kde-6.11 `
         packaging/linux/build-flatpak.sh

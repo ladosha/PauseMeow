@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>com.deskcat.DeskCat</id>
-  <name>DeskCat</name>
+  <id>com.vladmas.PauseMeow</id>
+  <name>PauseMeow</name>
   <summary>A friendly work and break timer</summary>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>LicenseRef-proprietary</project_license>
   <description>
     <p>
-      DeskCat helps you alternate focused work with regular breaks. An animated
+      PauseMeow helps you alternate focused work with regular breaks. An animated
       cat walks onto every connected screen, dims the desktop, and stays with
       you until the break is over.
     </p>
@@ -16,9 +16,9 @@
       dimming can all be configured from the settings window or system tray.
     </p>
   </description>
-  <launchable type="desktop-id">com.deskcat.DeskCat.desktop</launchable>
+  <launchable type="desktop-id">com.vladmas.PauseMeow.desktop</launchable>
   <provides>
-    <binary>deskcat</binary>
+    <binary>pausemeow</binary>
   </provides>
   <categories>
     <category>Utility</category>

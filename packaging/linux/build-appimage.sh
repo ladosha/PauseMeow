@@ -5,10 +5,10 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 project_root="$(cd -- "$script_dir/../.." && pwd)"
 build_dir="$project_root/build-linux-appimage"
 artifact_dir="$project_root/artifacts/linux"
-app_dir="$artifact_dir/DeskCat.AppDir"
+app_dir="$artifact_dir/PauseMeow.AppDir"
 qt_root="${QT_ROOT:-/opt/Qt/6.8.3/gcc_64}"
 linuxdeploy="${LINUXDEPLOY:-linuxdeploy-x86_64.AppImage}"
-version="$(sed -nE 's/^project\(DeskCat VERSION ([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' "$project_root/CMakeLists.txt")"
+version="$(sed -nE 's/^project\(PauseMeow VERSION ([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' "$project_root/CMakeLists.txt")"
 
 command -v cmake >/dev/null || {
     echo "cmake is required." >&2
@@ -40,15 +40,15 @@ QT_QPA_PLATFORM=offscreen ctest \
     --output-on-failure
 DESTDIR="$app_dir" cmake --install "$build_dir"
 cp \
-    "$app_dir/usr/share/metainfo/com.deskcat.DeskCat.metainfo.xml" \
-    "$app_dir/usr/share/metainfo/com.deskcat.DeskCat.appdata.xml"
+    "$app_dir/usr/share/metainfo/com.vladmas.PauseMeow.metainfo.xml" \
+    "$app_dir/usr/share/metainfo/com.vladmas.PauseMeow.appdata.xml"
 
 export QML_SOURCES_PATHS="$project_root/qml"
 export QMAKE="$qt_root/bin/qmake"
 export LD_LIBRARY_PATH="$qt_root/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 export QML2_IMPORT_PATH="$qt_root/qml${QML2_IMPORT_PATH:+:$QML2_IMPORT_PATH}"
 export EXTRA_PLATFORM_PLUGINS="libqwayland-egl.so;libqwayland-generic.so;libqoffscreen.so"
-export LDAI_OUTPUT="DeskCat-${version}-x86_64.AppImage"
+export LDAI_OUTPUT="PauseMeow-${version}-x86_64.AppImage"
 export APPIMAGE_EXTRACT_AND_RUN=1
 
 (

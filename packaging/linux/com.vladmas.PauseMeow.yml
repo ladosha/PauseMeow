@@ -1,8 +1,8 @@
-id: com.deskcat.DeskCat
+id: com.vladmas.PauseMeow
 runtime: org.kde.Platform
 runtime-version: "6.11"
 sdk: org.kde.Sdk
-command: deskcat
+command: pausemeow
 
 build-options:
   no-debuginfo: true
@@ -17,7 +17,7 @@ finish-args:
   - --talk-name=org.kde.StatusNotifierWatcher
 
 modules:
-  - name: deskcat
+  - name: pausemeow
     buildsystem: cmake-ninja
     builddir: true
     config-opts:

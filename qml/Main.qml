@@ -11,8 +11,75 @@ ApplicationWindow {
     minimumWidth: 680
     minimumHeight: 660
     visible: appController.settingsVisible
-    title: "DeskCat"
+    title: "PauseMeow"
     color: "#F6F0E7"
+    readonly property bool hasUnsavedChanges:
+        workCard.value !== appController.workMinutes
+        || restCard.value !== appController.restMinutes
+        || normalizedBreakMessage(breakMessageInput.text)
+            !== appController.breakMessage
+        || dimCheck.checked !== appController.dimBackground
+        || strictCheck.checked !== appController.strictMode
+        || autostartCheck.checked !== appController.autostart
+        || walkingSoundsCheck.checked !== appController.walkingSounds
+        || walkingPurrCheck.checked !== appController.walkingPurr
+        || restPurrCheck.checked !== appController.restPurr
+
+    function normalizedBreakMessage(message) {
+        return message.trim().replace(/\s+/g, " ")
+    }
+
+    function resetFormFromSavedSettings() {
+        workCard.value = appController.workMinutes
+        restCard.value = appController.restMinutes
+        breakMessageInput.text = appController.breakMessage
+        dimCheck.checked = appController.dimBackground
+        strictCheck.checked = appController.strictMode
+        autostartCheck.checked = appController.autostart
+        walkingSoundsCheck.checked = appController.walkingSounds
+        walkingPurrCheck.checked = appController.walkingPurr
+        restPurrCheck.checked = appController.restPurr
+    }
+
+    function discardChangesAndClose() {
+        resetFormFromSavedSettings()
+        if (appController.trayAvailable)
+            appController.hideSettings()
+        else
+            appController.quitApplication()
+    }
+
+    function applyCurrentSettings() {
+        appController.applySettings(
+            workCard.value,
+            restCard.value,
+            breakMessageInput.text,
+            dimCheck.checked,
+            strictCheck.checked,
+            autostartCheck.checked,
+            walkingSoundsCheck.checked,
+            walkingPurrCheck.checked,
+            restPurrCheck.checked)
+    }
+
+    function saveChangesAndClose() {
+        let quitAfterSave = !appController.trayAvailable
+        applyCurrentSettings()
+        if (quitAfterSave)
+            appController.quitApplication()
+    }
+
+    function showSaveSettingsDialog() {
+        showNormal()
+        raise()
+        requestActivate()
+        Qt.callLater(function() {
+            if (!saveSettingsDialog.opened)
+                saveSettingsDialog.open()
+            window.raise()
+            window.requestActivate()
+        })
+    }
 
     onVisibleChanged: {
         if (visible) {
@@ -22,6 +89,11 @@ ApplicationWindow {
     }
 
     onClosing: function(close) {
+        if (hasUnsavedChanges) {
+            close.accepted = false
+            showSaveSettingsDialog()
+            return
+        }
         if (appController.trayAvailable) {
             close.accepted = false
             appController.hideSettings()
@@ -35,6 +107,25 @@ ApplicationWindow {
         color: "#302B38"
         font.pixelSize: 15
         font.weight: Font.DemiBold
+    }
+
+    component RoundedDialogButton: Button {
+        id: dialogButton
+        property bool primary: false
+
+        leftPadding: 18
+        rightPadding: 18
+        topPadding: 9
+        bottomPadding: 9
+        palette.buttonText: primary ? "#FFFFFF" : "#302B38"
+
+        background: Rectangle {
+            radius: 12
+            color: dialogButton.primary
+                ? (dialogButton.down ? "#C96520" : "#E47C2B")
+                : (dialogButton.down ? "#E4D8CB" : "#EFE5DA")
+            border.color: dialogButton.primary ? "#C96520" : "#DED2C5"
+        }
     }
 
     component TimeCard: Rectangle {
@@ -101,6 +192,56 @@ ApplicationWindow {
         }
     }
 
+    Dialog {
+        id: saveSettingsDialog
+        anchors.centerIn: parent
+        modal: true
+        closePolicy: Popup.NoAutoClose
+        title: appController.translations["dialog.save.title"]
+
+        contentItem: ColumnLayout {
+            implicitWidth: 420
+            spacing: 18
+
+            Text {
+                text: appController.translations["dialog.save.body"]
+                color: "#302B38"
+                font.pixelSize: 14
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 12
+
+                Item { Layout.fillWidth: true }
+
+                RoundedDialogButton {
+                    text: appController.translations["dialog.save.yes"]
+                    primary: true
+                    onClicked: {
+                        saveSettingsDialog.close()
+                        window.saveChangesAndClose()
+                    }
+                }
+
+                RoundedDialogButton {
+                    text: appController.translations["dialog.save.no"]
+                    onClicked: {
+                        saveSettingsDialog.close()
+                        window.discardChangesAndClose()
+                    }
+                }
+
+                RoundedDialogButton {
+                    text: appController.translations["dialog.save.cancel"]
+                    onClicked: saveSettingsDialog.close()
+                }
+            }
+        }
+    }
+
     Rectangle {
         anchors.fill: parent
         color: "#F6F0E7"
@@ -151,7 +292,7 @@ ApplicationWindow {
                         spacing: 8
 
                         Text {
-                            text: "DeskCat"
+                            text: "PauseMeow"
                             color: "#FFF8EF"
                             font.pixelSize: 38
                             font.weight: Font.Bold
@@ -257,6 +398,65 @@ ApplicationWindow {
                         value: appController.restMinutes
                         from: 1
                         to: 60
+                    }
+                }
+
+                SectionTitle {
+                    text: appController.translations["section.breakMessage"]
+                    Layout.leftMargin: 36
+                    Layout.topMargin: 4
+                }
+
+                Rectangle {
+                    Layout.leftMargin: 32
+                    Layout.rightMargin: 32
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 150
+                    radius: 20
+                    color: "#FFFDFC"
+                    border.color: "#E7DDD2"
+
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: 20
+                        spacing: 7
+
+                        Text {
+                            text: appController.translations["breakMessage.description"]
+                            color: "#807682"
+                            font.pixelSize: 13
+                            Layout.fillWidth: true
+                            wrapMode: Text.WordWrap
+                        }
+
+                        TextField {
+                            id: breakMessageInput
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 52
+                            text: appController.breakMessage
+                            placeholderText: appController.translations["overlay.rest.subtitle"]
+                            maximumLength: appController.breakMessageMaxLength
+                            selectByMouse: true
+                            font.pixelSize: 14
+                            color: "#302B38"
+                            selectionColor: "#F6CDAF"
+                            selectedTextColor: "#302B38"
+
+                            background: Rectangle {
+                                radius: 14
+                                color: "#F7F1E8"
+                                border.color: breakMessageInput.activeFocus
+                                    ? "#E47C2B" : "#DED2C5"
+                            }
+                        }
+
+                        Text {
+                            text: breakMessageInput.length + " / "
+                                + appController.breakMessageMaxLength
+                            color: "#9A8F9C"
+                            font.pixelSize: 12
+                            Layout.alignment: Qt.AlignRight
+                        }
                     }
                 }
 
@@ -415,7 +615,14 @@ ApplicationWindow {
                             color: parent.down ? "#E4D8CB" : "#EFE5DA"
                         }
 
-                        onClicked: appController.previewBreak(12)
+                        onClicked: appController.previewBreak(
+                            12,
+                            breakMessageInput.text,
+                            dimCheck.checked,
+                            strictCheck.checked,
+                            walkingSoundsCheck.checked,
+                            walkingPurrCheck.checked,
+                            restPurrCheck.checked)
                     }
 
                     Button {
@@ -451,18 +658,20 @@ ApplicationWindow {
                             color: parent.down ? "#C96520" : "#E47C2B"
                         }
 
-                        onClicked: appController.applySettings(
-                            workCard.value,
-                            restCard.value,
-                            dimCheck.checked,
-                            strictCheck.checked,
-                            autostartCheck.checked,
-                            walkingSoundsCheck.checked,
-                            walkingPurrCheck.checked,
-                            restPurrCheck.checked)
+                        onClicked: window.applyCurrentSettings()
                     }
                 }
             }
+        }
+    }
+
+    Connections {
+        target: appController
+
+        function onSettingsActivationRequested() {
+            window.showNormal()
+            window.raise()
+            window.requestActivate()
         }
     }
 

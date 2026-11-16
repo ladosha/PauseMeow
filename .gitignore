@@ -1,10 +1,62 @@
+# Internal project material
+/docs/internal/
+/PROJECT_CONTEXT.md
+/assets/sprites/backups/
+/.agents/
+/.codex/
+
+# Build and packaging output
+/build/
+/build-*/
+/dist/
+/artifacts/
+/.flatpak-builder/
 /.qt/
 /.tools/
-/build/
-/build-linux-*/
-/dist/
-/.vs/
+/compile_commands.json
+/CMakeUserPresets.json
+
+# IDE and editor state
 /.idea/
+/.vs/
+/.vscode/
 *.user
-cat_ref.jpeg
-artifacts/*
+*.user.*
+*.suo
+*.swp
+*.swo
+*~
+
+# Logs, caches, and temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+*.orig
+.cache/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local environments and credentials
+.env
+.env.*
+!.env.example
+!.env.sample
+.venv/
+venv/
+secrets/
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Operating-system metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local source/reference material
+/cat_ref.jpeg

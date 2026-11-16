@@ -21,10 +21,10 @@
 #endif
 
 namespace {
-constexpr auto OrganizationName = "DeskCat";
-constexpr auto ApplicationName = "DeskCat";
-constexpr auto AutostartValueName = "DeskCat";
-constexpr auto DesktopId = "com.deskcat.DeskCat";
+constexpr auto OrganizationName = "PauseMeow";
+constexpr auto ApplicationName = "PauseMeow";
+constexpr auto AutostartValueName = "PauseMeow";
+constexpr auto DesktopId = "com.vladmas.PauseMeow";
 
 #ifdef Q_OS_LINUX
 constexpr auto PortalService = "org.freedesktop.portal.Desktop";
@@ -87,7 +87,7 @@ bool setNativeLinuxAutostart(const bool enabled)
         const bool removed = !QFileInfo::exists(autostartPath)
             || QFile::remove(autostartPath);
         const QString legacyPath = QDir(QFileInfo(autostartPath).absolutePath())
-            .filePath(QStringLiteral("deskcat.desktop"));
+            .filePath(QStringLiteral("pausemeow.desktop"));
         if (QFileInfo::exists(legacyPath)) {
             QFile::remove(legacyPath);
         }
@@ -102,7 +102,7 @@ bool setNativeLinuxAutostart(const bool enabled)
         "[Desktop Entry]\n"
         "Type=Application\n"
         "Version=1.0\n"
-        "Name=DeskCat\n"
+        "Name=PauseMeow\n"
         "Comment=Work and break timer\n"
         "Exec=%1 --background\n"
         "Icon=%2\n"
@@ -137,7 +137,7 @@ bool requestFlatpakAutostart(const bool enabled)
         return false;
     }
 
-    const QString token = QStringLiteral("deskcat_%1")
+    const QString token = QStringLiteral("pausemeow_%1")
         .arg(QUuid::createUuid().toString(QUuid::Id128));
     QString sender = bus.baseService();
     if (sender.startsWith(QLatin1Char(':'))) {
@@ -161,7 +161,7 @@ bool requestFlatpakAutostart(const bool enabled)
     QVariantMap options;
     options.insert(QStringLiteral("handle_token"), token);
     options.insert(QStringLiteral("reason"),
-        QStringLiteral("Start DeskCat automatically and keep the break timer available in the background."));
+        QStringLiteral("Start PauseMeow automatically and keep the break timer available in the background."));
     options.insert(QStringLiteral("autostart"), enabled);
     options.insert(QStringLiteral("commandline"), QStringList {
         QFileInfo(QCoreApplication::applicationFilePath()).fileName(),

@@ -108,9 +108,9 @@ Window {
     }
 
     function startWalkingAudio() {
-        if (appController.walkingSounds)
+        if (appController.overlayWalkingSounds)
             walkingSound.play()
-        if (appController.walkingPurr)
+        if (appController.overlayWalkingPurr)
             walkingPurrSound.play()
     }
 
@@ -121,7 +121,7 @@ Window {
 
     function startRestAudio() {
         stopWalkingAudio()
-        if (appController.restPurr)
+        if (appController.overlayRestPurr)
             restPurrSound.play()
     }
 
@@ -182,7 +182,7 @@ Window {
 
     Rectangle {
         anchors.fill: parent
-        color: appController.dimBackground ? "#E0181721" : "transparent"
+        color: appController.overlayDimBackground ? "#E0181721" : "transparent"
 
         Behavior on color {
             ColorAnimation { duration: 300 }
@@ -214,18 +214,26 @@ Window {
 
     Text {
         visible: primaryOverlay
+        width: Math.min(root.width * 0.82, 920)
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
         anchors.topMargin: Math.max(90, root.height * 0.14)
         text: {
-            if (appController.phase === "rest")
-                return appController.translations["overlay.rest.subtitle"]
+            if (appController.phase === "rest") {
+                return appController.overlayBreakMessage.length > 0
+                    ? appController.overlayBreakMessage
+                    : appController.translations["overlay.rest.subtitle"]
+            }
             if (appController.phase === "leaving")
                 return appController.translations["overlay.leaving.subtitle"]
             return appController.translations["overlay.entering.subtitle"]
         }
         color: "#BEB2C3"
         font.pixelSize: Math.max(14, Math.min(20, root.width / 70))
+        horizontalAlignment: Text.AlignHCenter
+        wrapMode: Text.WordWrap
+        maximumLineCount: 3
+        elide: Text.ElideRight
     }
 
     SpritePlayer {
@@ -309,12 +317,13 @@ Window {
         parent: focusArea
         visible: root.primaryOverlay
             && appController.phase === "rest"
-            && !appController.strictMode
+            && !appController.overlayStrictMode
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.margins: 28
         z: 10
         text: appController.translations["overlay.wake"]
+        focusPolicy: Qt.NoFocus
         palette.buttonText: "#EADFEA"
 
         background: Rectangle {

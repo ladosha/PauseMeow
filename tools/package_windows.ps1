@@ -22,11 +22,11 @@ if ([string]::IsNullOrWhiteSpace($BuildDir)) {
 }
 $BuildDir = [System.IO.Path]::GetFullPath($BuildDir)
 $artifactRoot = Join-Path $projectRoot "artifacts\windows"
-$stageDir = Join-Path $artifactRoot "DeskCat"
+$stageDir = Join-Path $artifactRoot "PauseMeow"
 $cmakeLists = Get-Content (Join-Path $projectRoot "CMakeLists.txt") -Raw
-$versionMatch = [regex]::Match($cmakeLists, 'project\(DeskCat VERSION ([0-9]+\.[0-9]+\.[0-9]+)')
+$versionMatch = [regex]::Match($cmakeLists, 'project\(PauseMeow VERSION ([0-9]+\.[0-9]+\.[0-9]+)')
 if (-not $versionMatch.Success) {
-    throw "Could not read the DeskCat version from CMakeLists.txt."
+    throw "Could not read the PauseMeow version from CMakeLists.txt."
 }
 $appVersion = $versionMatch.Groups[1].Value
 
@@ -104,9 +104,9 @@ function Invoke-AuthenticodeSign {
         if (-not (Test-Path -LiteralPath $CertificatePath -PathType Leaf)) {
             throw "Certificate file does not exist: $CertificatePath"
         }
-        $password = $env:DESKCAT_SIGN_PASSWORD
+        $password = $env:PAUSEMEOW_SIGN_PASSWORD
         if ([string]::IsNullOrWhiteSpace($password)) {
-            throw "Set DESKCAT_SIGN_PASSWORD when signing with a PFX certificate."
+            throw "Set PAUSEMEOW_SIGN_PASSWORD when signing with a PFX certificate."
         }
         $arguments += @("/f", [System.IO.Path]::GetFullPath($CertificatePath), "/p", $password)
     } elseif (-not [string]::IsNullOrWhiteSpace($CertificateThumbprint)) {
@@ -125,9 +125,9 @@ if (-not $SkipBuild) {
     )
 }
 
-$builtExe = Join-Path $BuildDir "$Configuration\DeskCat.exe"
+$builtExe = Join-Path $BuildDir "$Configuration\PauseMeow.exe"
 if (-not (Test-Path -LiteralPath $builtExe -PathType Leaf)) {
-    throw "DeskCat executable was not found: $builtExe"
+    throw "PauseMeow executable was not found: $builtExe"
 }
 
 if ([string]::IsNullOrWhiteSpace($QtBin)) {
@@ -162,7 +162,7 @@ if (Test-Path -LiteralPath $stageDir) {
 }
 New-Item -ItemType Directory -Force -Path $stageDir | Out-Null
 
-$stageExe = Join-Path $stageDir "DeskCat.exe"
+$stageExe = Join-Path $stageDir "PauseMeow.exe"
 Copy-Item -LiteralPath $builtExe -Destination $stageExe
 Invoke-Checked -FilePath $winDeployQt -ArgumentList @(
     "--release", "--qmldir", (Join-Path $projectRoot "qml"), "--dir", $stageDir, $stageExe
@@ -170,7 +170,7 @@ Invoke-Checked -FilePath $winDeployQt -ArgumentList @(
 Invoke-AuthenticodeSign -Path $stageExe
 
 $iscc = Find-Iscc
-$installerScript = Join-Path $projectRoot "installer\DeskCat.iss"
+$installerScript = Join-Path $projectRoot "installer\PauseMeow.iss"
 Invoke-Checked -FilePath $iscc -ArgumentList @(
     "/DAppVersion=$appVersion",
     "/DSourceDir=$stageDir",
@@ -178,7 +178,7 @@ Invoke-Checked -FilePath $iscc -ArgumentList @(
     $installerScript
 )
 
-$installer = Join-Path $artifactRoot "DeskCat-Setup-$appVersion-x64.exe"
+$installer = Join-Path $artifactRoot "PauseMeow-Setup-$appVersion-x64.exe"
 if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) {
     throw "The installer was not created at the expected path: $installer"
 }

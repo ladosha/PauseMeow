@@ -17,17 +17,17 @@
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
-    QApplication::setApplicationName(QStringLiteral("DeskCat"));
-    QApplication::setOrganizationName(QStringLiteral("DeskCat"));
-    QApplication::setApplicationVersion(QStringLiteral(DESKCAT_VERSION));
+    QApplication::setApplicationName(QStringLiteral("PauseMeow"));
+    QApplication::setOrganizationName(QStringLiteral("PauseMeow"));
+    QApplication::setApplicationVersion(QStringLiteral(PAUSEMEOW_VERSION));
 #ifdef Q_OS_LINUX
-    QApplication::setDesktopFileName(QStringLiteral("com.deskcat.DeskCat"));
+    QApplication::setDesktopFileName(QStringLiteral("com.vladmas.PauseMeow"));
 #endif
     QApplication::setWindowIcon(QIcon(QStringLiteral(":/assets/app_icon.png")));
     QApplication::setQuitOnLastWindowClosed(false);
 
     QCommandLineParser parser;
-    parser.setApplicationDescription(QStringLiteral("DeskCat focus and rest timer"));
+    parser.setApplicationDescription(QStringLiteral("PauseMeow focus and rest timer"));
     parser.addHelpOption();
     parser.addVersionOption();
     parser.addOption(QCommandLineOption(
@@ -38,10 +38,10 @@ int main(int argc, char *argv[])
         QStringLiteral("Load QML and exit automatically.")));
     parser.addOption(QCommandLineOption(
         QStringLiteral("reset-settings"),
-        QStringLiteral("Clear settings and remove DeskCat from autostart before launch.")));
+        QStringLiteral("Clear settings and remove PauseMeow from autostart before launch.")));
     parser.addOption(QCommandLineOption(
         QStringLiteral("uninstall"),
-        QStringLiteral("Remove per-user DeskCat settings and autostart registration, then exit.")));
+        QStringLiteral("Remove per-user PauseMeow settings and autostart registration, then exit.")));
     parser.addOption(QCommandLineOption(
         QStringLiteral("background"),
         QStringLiteral("Start quietly when already configured.")));
@@ -57,6 +57,7 @@ int main(int argc, char *argv[])
     }
 
     const bool smokeTest = parser.isSet(QStringLiteral("smoke-test"));
+    const bool backgroundRequested = parser.isSet(QStringLiteral("background"));
     QPointer<AppController> controllerInstance;
     SingleInstance singleInstance;
     QObject::connect(&singleInstance, &SingleInstance::activationRequested,
@@ -85,7 +86,7 @@ int main(int argc, char *argv[])
         case SingleInstance::StartResult::Secondary:
             return 0;
         case SingleInstance::StartResult::Error:
-            qCritical() << "Could not establish the DeskCat single-instance endpoint.";
+            qCritical() << "Could not establish the PauseMeow single-instance endpoint.";
             return 3;
         case SingleInstance::StartResult::Primary:
             break;
@@ -98,7 +99,7 @@ int main(int argc, char *argv[])
 
     QQuickStyle::setStyle(QStringLiteral("Basic"));
 
-    AppController controller(!smokeTest);
+    AppController controller(!smokeTest, backgroundRequested || smokeTest);
     OverlayGeometryController overlayGeometryController;
     controllerInstance = &controller;
     QQmlApplicationEngine engine;
@@ -114,7 +115,7 @@ int main(int argc, char *argv[])
             QCoreApplication::exit(2);
         }, Qt::QueuedConnection);
 
-    engine.loadFromModule(QStringLiteral("DeskCat"), QStringLiteral("Main"));
+    engine.loadFromModule(QStringLiteral("PauseMeow"), QStringLiteral("Main"));
     if (engine.rootObjects().isEmpty()) {
         return 2;
     }
@@ -125,7 +126,14 @@ int main(int argc, char *argv[])
 
     if (parser.isSet(QStringLiteral("demo"))) {
         QTimer::singleShot(700, &controller, [&controller] {
-            controller.previewBreak(8);
+            controller.previewBreak(
+                8,
+                controller.breakMessage(),
+                controller.dimBackground(),
+                controller.strictMode(),
+                controller.walkingSounds(),
+                controller.walkingPurr(),
+                controller.restPurr());
         });
     }
 

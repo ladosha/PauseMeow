@@ -3,20 +3,19 @@ set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 project_root="$(cd -- "$script_dir/../.." && pwd)"
-manifest="$script_dir/com.deskcat.DeskCat.yml"
+manifest="$script_dir/com.vladmas.PauseMeow.yml"
 build_dir="$project_root/build-linux-flatpak"
 repo_dir="$project_root/artifacts/linux/flatpak-repo"
 artifact_dir="$project_root/artifacts/linux"
-app_id="com.deskcat.DeskCat"
-version="$(sed -nE 's/^project\(DeskCat VERSION ([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' "$project_root/CMakeLists.txt")"
+app_id="com.vladmas.PauseMeow"
+version="$(sed -nE 's/^project\(PauseMeow VERSION ([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' "$project_root/CMakeLists.txt")"
 arch="$(flatpak --default-arch)"
-bundle="$artifact_dir/DeskCat-${version}-${arch}.flatpak"
+bundle="$artifact_dir/PauseMeow-${version}-${arch}.flatpak"
 flatpak_scope=(--user)
-builder_extra=()
+builder_extra=(--disable-rofiles-fuse --disable-updates)
 
-if [[ "${DESKCAT_FLATPAK_SYSTEM:-0}" == "1" ]]; then
+if [[ "${PAUSEMEOW_FLATPAK_SYSTEM:-0}" == "1" ]]; then
     flatpak_scope=()
-    builder_extra=(--disable-rofiles-fuse)
     if [[ ! -s /etc/machine-id ]]; then
         dbus-uuidgen --ensure=/etc/machine-id
     fi

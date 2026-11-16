@@ -11,8 +11,14 @@
 #include <QTimer>
 
 namespace {
-constexpr auto OrganizationName = "DeskCat";
-constexpr auto ApplicationName = "DeskCat";
+constexpr auto OrganizationName = "PauseMeow";
+constexpr auto ApplicationName = "PauseMeow";
+constexpr int BreakMessageMaxLength = 120;
+
+QString normalizeBreakMessage(const QString &message)
+{
+    return message.simplified().left(BreakMessageMaxLength);
+}
 
 const QVariantMap EnglishTranslations {
     {QStringLiteral("unit.minutes"), QStringLiteral("min")},
@@ -30,10 +36,12 @@ const QVariantMap EnglishTranslations {
     {QStringLiteral("work.subtitle"), QStringLiteral("How long the cat will leave you undisturbed")},
     {QStringLiteral("rest.title"), QStringLiteral("Rest")},
     {QStringLiteral("rest.subtitle"), QStringLiteral("How long the cat will sleep on your screen")},
+    {QStringLiteral("section.breakMessage"), QStringLiteral("Break message")},
+    {QStringLiteral("breakMessage.description"), QStringLiteral("Show a short personal reminder while you rest")},
     {QStringLiteral("section.behavior"), QStringLiteral("Behavior")},
     {QStringLiteral("behavior.dim"), QStringLiteral("Dim the background during breaks")},
     {QStringLiteral("behavior.strict"), QStringLiteral("Strict mode — for workaholics")},
-    {QStringLiteral("behavior.autostart"), QStringLiteral("Start DeskCat when you sign in")},
+    {QStringLiteral("behavior.autostart"), QStringLiteral("Start PauseMeow when you sign in")},
     {QStringLiteral("section.sound"), QStringLiteral("Sound")},
     {QStringLiteral("sound.walkingSteps"), QStringLiteral("Footstep sounds while walking")},
     {QStringLiteral("sound.walkingPurr"), QStringLiteral("Purring while walking")},
@@ -45,6 +53,11 @@ const QVariantMap EnglishTranslations {
     {QStringLiteral("button.pause"), QStringLiteral("Pause")},
     {QStringLiteral("button.saveRestart"), QStringLiteral("Save and restart")},
     {QStringLiteral("button.saveStart"), QStringLiteral("Save and start")},
+    {QStringLiteral("dialog.save.title"), QStringLiteral("Unsaved settings")},
+    {QStringLiteral("dialog.save.body"), QStringLiteral("Do you want to save the settings?")},
+    {QStringLiteral("dialog.save.yes"), QStringLiteral("Yes")},
+    {QStringLiteral("dialog.save.no"), QStringLiteral("No")},
+    {QStringLiteral("dialog.save.cancel"), QStringLiteral("Cancel")},
     {QStringLiteral("overlay.entering.title"), QStringLiteral("Time to stop")},
     {QStringLiteral("overlay.leaving.title"), QStringLiteral("Well rested")},
     {QStringLiteral("overlay.rest.title"), QStringLiteral("The cat sleeps — you rest")},
@@ -59,7 +72,7 @@ const QVariantMap EnglishTranslations {
     {QStringLiteral("tray.pause"), QStringLiteral("Pause timer")},
     {QStringLiteral("tray.resume"), QStringLiteral("Resume timer")},
     {QStringLiteral("tray.quit"), QStringLiteral("Quit")},
-    {QStringLiteral("tray.firstCycle"), QStringLiteral("DeskCat — set up your first session")},
+    {QStringLiteral("tray.firstCycle"), QStringLiteral("PauseMeow — set up your first session")},
     {QStringLiteral("phase.paused"), QStringLiteral("paused")},
     {QStringLiteral("phase.stopped"), QStringLiteral("not configured")},
     {QStringLiteral("phase.work"), QStringLiteral("work")},
@@ -84,10 +97,12 @@ const QVariantMap RussianTranslations {
     {QStringLiteral("work.subtitle"), QStringLiteral("Сколько кот не будет вас беспокоить")},
     {QStringLiteral("rest.title"), QStringLiteral("Отдых")},
     {QStringLiteral("rest.subtitle"), QStringLiteral("Сколько кот будет спать на экране")},
+    {QStringLiteral("section.breakMessage"), QStringLiteral("Сообщение во время перерыва")},
+    {QStringLiteral("breakMessage.description"), QStringLiteral("Показывать короткое личное напоминание во время отдыха")},
     {QStringLiteral("section.behavior"), QStringLiteral("Поведение")},
     {QStringLiteral("behavior.dim"), QStringLiteral("Затемнять фон во время отдыха")},
     {QStringLiteral("behavior.strict"), QStringLiteral("Строгий режим — для трудоголиков")},
-    {QStringLiteral("behavior.autostart"), QStringLiteral("Запускать DeskCat при входе в систему")},
+    {QStringLiteral("behavior.autostart"), QStringLiteral("Запускать PauseMeow при входе в систему")},
     {QStringLiteral("section.sound"), QStringLiteral("Звук")},
     {QStringLiteral("sound.walkingSteps"), QStringLiteral("Звуки шагов во время ходьбы")},
     {QStringLiteral("sound.walkingPurr"), QStringLiteral("Мурчание во время ходьбы")},
@@ -99,6 +114,11 @@ const QVariantMap RussianTranslations {
     {QStringLiteral("button.pause"), QStringLiteral("Пауза")},
     {QStringLiteral("button.saveRestart"), QStringLiteral("Сохранить и перезапустить")},
     {QStringLiteral("button.saveStart"), QStringLiteral("Сохранить и начать")},
+    {QStringLiteral("dialog.save.title"), QStringLiteral("Несохранённые настройки")},
+    {QStringLiteral("dialog.save.body"), QStringLiteral("Сохранить настройки?")},
+    {QStringLiteral("dialog.save.yes"), QStringLiteral("Да")},
+    {QStringLiteral("dialog.save.no"), QStringLiteral("Нет")},
+    {QStringLiteral("dialog.save.cancel"), QStringLiteral("Отмена")},
     {QStringLiteral("overlay.entering.title"), QStringLiteral("Время остановиться")},
     {QStringLiteral("overlay.leaving.title"), QStringLiteral("Отлично отдохнули")},
     {QStringLiteral("overlay.rest.title"), QStringLiteral("Кот спит — вы отдыхаете")},
@@ -113,7 +133,7 @@ const QVariantMap RussianTranslations {
     {QStringLiteral("tray.pause"), QStringLiteral("Приостановить таймер")},
     {QStringLiteral("tray.resume"), QStringLiteral("Продолжить таймер")},
     {QStringLiteral("tray.quit"), QStringLiteral("Выйти")},
-    {QStringLiteral("tray.firstCycle"), QStringLiteral("DeskCat — настройте первый цикл")},
+    {QStringLiteral("tray.firstCycle"), QStringLiteral("PauseMeow — настройте первый цикл")},
     {QStringLiteral("phase.paused"), QStringLiteral("пауза")},
     {QStringLiteral("phase.stopped"), QStringLiteral("не настроен")},
     {QStringLiteral("phase.work"), QStringLiteral("работа")},
@@ -123,7 +143,10 @@ const QVariantMap RussianTranslations {
 };
 }
 
-AppController::AppController(const bool trayEnabled, QObject *parent)
+AppController::AppController(
+    const bool trayEnabled,
+    const bool startHidden,
+    QObject *parent)
     : QObject(parent)
     , m_trayEnabled(trayEnabled)
 {
@@ -149,7 +172,7 @@ AppController::AppController(const bool trayEnabled, QObject *parent)
     if (m_configured) {
         QTimer::singleShot(0, this, &AppController::startWork);
     }
-    if (!m_configured || (m_trayEnabled && !m_trayIcon)) {
+    if (!startHidden || !m_configured || (m_trayEnabled && !m_trayIcon)) {
         m_settingsVisible = true;
     }
 }
@@ -196,6 +219,46 @@ int AppController::workMinutes() const noexcept
 int AppController::restMinutes() const noexcept
 {
     return m_restMinutes;
+}
+
+QString AppController::breakMessage() const
+{
+    return m_breakMessage;
+}
+
+int AppController::breakMessageMaxLength() const noexcept
+{
+    return BreakMessageMaxLength;
+}
+
+QString AppController::overlayBreakMessage() const
+{
+    return m_previewSettingsActive ? m_previewBreakMessage : m_breakMessage;
+}
+
+bool AppController::overlayDimBackground() const noexcept
+{
+    return m_previewSettingsActive ? m_previewDimBackground : m_dimBackground;
+}
+
+bool AppController::overlayStrictMode() const noexcept
+{
+    return m_previewSettingsActive ? m_previewStrictMode : m_strictMode;
+}
+
+bool AppController::overlayWalkingSounds() const noexcept
+{
+    return m_previewSettingsActive ? m_previewWalkingSounds : m_walkingSounds;
+}
+
+bool AppController::overlayWalkingPurr() const noexcept
+{
+    return m_previewSettingsActive ? m_previewWalkingPurr : m_walkingPurr;
+}
+
+bool AppController::overlayRestPurr() const noexcept
+{
+    return m_previewSettingsActive ? m_previewRestPurr : m_restPurr;
 }
 
 bool AppController::dimBackground() const noexcept
@@ -258,6 +321,7 @@ QVariantMap AppController::translations() const
 void AppController::applySettings(
     const int workMinutes,
     const int restMinutes,
+    const QString &breakMessage,
     const bool dimBackground,
     const bool strictMode,
     const bool autostart,
@@ -267,6 +331,8 @@ void AppController::applySettings(
 {
     m_workMinutes = qBound(1, workMinutes, 240);
     m_restMinutes = qBound(1, restMinutes, 60);
+    m_previewSettingsActive = false;
+    m_breakMessage = normalizeBreakMessage(breakMessage);
     m_dimBackground = dimBackground;
     m_strictMode = strictMode;
     const bool previousAutostart = m_autostart;
@@ -277,6 +343,7 @@ void AppController::applySettings(
     m_walkingPurr = walkingPurr;
     m_restPurr = restPurr;
     emit settingsChanged();
+    emit overlaySettingsChanged();
 
     if (!m_configured) {
         m_configured = true;
@@ -290,11 +357,11 @@ void AppController::applySettings(
 
 void AppController::showSettings()
 {
-    if (m_settingsVisible) {
-        return;
+    if (!m_settingsVisible) {
+        m_settingsVisible = true;
+        emit settingsVisibleChanged();
     }
-    m_settingsVisible = true;
-    emit settingsVisibleChanged();
+    emit settingsActivationRequested();
 }
 
 void AppController::hideSettings()
@@ -321,9 +388,24 @@ void AppController::setLanguage(const QString &language)
     updateTray();
 }
 
-void AppController::previewBreak(const int seconds)
+void AppController::previewBreak(
+    const int seconds,
+    const QString &breakMessage,
+    const bool dimBackground,
+    const bool strictMode,
+    const bool walkingSounds,
+    const bool walkingPurr,
+    const bool restPurr)
 {
+    m_previewBreakMessage = normalizeBreakMessage(breakMessage);
+    m_previewDimBackground = dimBackground;
+    m_previewStrictMode = strictMode;
+    m_previewWalkingSounds = walkingSounds;
+    m_previewWalkingPurr = walkingPurr;
+    m_previewRestPurr = restPurr;
+    m_previewSettingsActive = true;
     m_previewRestSeconds = qBound(3, seconds, 3600);
+    emit overlaySettingsChanged();
     hideSettings();
     m_timer.beginEntering();
 }
@@ -346,12 +428,16 @@ void AppController::completeLeaving()
     if (m_timer.phase() != CountdownTimer::Phase::Leaving) {
         return;
     }
+    if (m_previewSettingsActive) {
+        m_previewSettingsActive = false;
+        emit overlaySettingsChanged();
+    }
     startWork();
 }
 
 void AppController::finishBreakEarly()
 {
-    if (m_strictMode) {
+    if (overlayStrictMode()) {
         return;
     }
 
@@ -402,9 +488,12 @@ void AppController::resetApplicationState()
     m_timer.stop();
     m_recentClicks.clear();
     m_previewRestSeconds = 0;
+    m_previewBreakMessage.clear();
+    m_previewSettingsActive = false;
 
     m_workMinutes = 45;
     m_restMinutes = 10;
+    m_breakMessage.clear();
     m_dimBackground = true;
     m_strictMode = false;
     m_autostart = false;
@@ -416,6 +505,7 @@ void AppController::resetApplicationState()
     const bool wasConfigured = m_configured;
     m_configured = false;
     emit settingsChanged();
+    emit overlaySettingsChanged();
     emit languageChanged();
     if (wasConfigured) {
         emit configuredChanged();
@@ -430,6 +520,8 @@ void AppController::loadSettings()
     m_configured = settings.value(QStringLiteral("configured"), false).toBool();
     m_workMinutes = settings.value(QStringLiteral("workMinutes"), 45).toInt();
     m_restMinutes = settings.value(QStringLiteral("restMinutes"), 10).toInt();
+    m_breakMessage = normalizeBreakMessage(
+        settings.value(QStringLiteral("breakMessage")).toString());
     m_dimBackground = settings.value(QStringLiteral("dimBackground"), true).toBool();
     m_strictMode = settings.value(QStringLiteral("strictMode"), false).toBool();
     m_autostart = settings.value(QStringLiteral("autostart"), false).toBool();
@@ -449,6 +541,7 @@ void AppController::saveSettings()
     settings.setValue(QStringLiteral("configured"), m_configured);
     settings.setValue(QStringLiteral("workMinutes"), m_workMinutes);
     settings.setValue(QStringLiteral("restMinutes"), m_restMinutes);
+    settings.setValue(QStringLiteral("breakMessage"), m_breakMessage);
     settings.setValue(QStringLiteral("dimBackground"), m_dimBackground);
     settings.setValue(QStringLiteral("strictMode"), m_strictMode);
     settings.setValue(QStringLiteral("autostart"), m_autostart);
@@ -479,7 +572,14 @@ void AppController::createTrayIcon()
 
     connect(m_settingsAction, &QAction::triggered, this, &AppController::showSettings);
     connect(m_breakAction, &QAction::triggered, this, [this] {
-        previewBreak(m_restMinutes * 60);
+        previewBreak(
+            m_restMinutes * 60,
+            m_breakMessage,
+            m_dimBackground,
+            m_strictMode,
+            m_walkingSounds,
+            m_walkingPurr,
+            m_restPurr);
     });
     connect(m_pauseAction, &QAction::triggered, this, &AppController::togglePause);
     connect(m_quitAction, &QAction::triggered, this, &AppController::quitApplication);
@@ -510,7 +610,7 @@ void AppController::updateTray()
     const QString label = phaseLabel(m_timer.phase(), m_timer.paused());
     const QString tooltip = m_timer.phase() == CountdownTimer::Phase::Stopped
         ? text(QStringLiteral("tray.firstCycle"))
-        : QStringLiteral("DeskCat — %1 · %2").arg(label, remainingText());
+        : QStringLiteral("PauseMeow — %1 · %2").arg(label, remainingText());
     m_trayIcon->setToolTip(tooltip);
 
     if (m_pauseAction) {

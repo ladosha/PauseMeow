@@ -20,6 +20,14 @@ class AppController final : public QObject
     Q_PROPERTY(bool paused READ paused NOTIFY pausedChanged)
     Q_PROPERTY(int workMinutes READ workMinutes NOTIFY settingsChanged)
     Q_PROPERTY(int restMinutes READ restMinutes NOTIFY settingsChanged)
+    Q_PROPERTY(QString breakMessage READ breakMessage NOTIFY settingsChanged)
+    Q_PROPERTY(int breakMessageMaxLength READ breakMessageMaxLength CONSTANT)
+    Q_PROPERTY(QString overlayBreakMessage READ overlayBreakMessage NOTIFY overlaySettingsChanged)
+    Q_PROPERTY(bool overlayDimBackground READ overlayDimBackground NOTIFY overlaySettingsChanged)
+    Q_PROPERTY(bool overlayStrictMode READ overlayStrictMode NOTIFY overlaySettingsChanged)
+    Q_PROPERTY(bool overlayWalkingSounds READ overlayWalkingSounds NOTIFY overlaySettingsChanged)
+    Q_PROPERTY(bool overlayWalkingPurr READ overlayWalkingPurr NOTIFY overlaySettingsChanged)
+    Q_PROPERTY(bool overlayRestPurr READ overlayRestPurr NOTIFY overlaySettingsChanged)
     Q_PROPERTY(bool dimBackground READ dimBackground NOTIFY settingsChanged)
     Q_PROPERTY(bool strictMode READ strictMode NOTIFY settingsChanged)
     Q_PROPERTY(bool autostart READ autostart NOTIFY settingsChanged)
@@ -33,7 +41,10 @@ class AppController final : public QObject
     Q_PROPERTY(QVariantMap translations READ translations NOTIFY languageChanged)
 
 public:
-    explicit AppController(bool trayEnabled, QObject *parent = nullptr);
+    explicit AppController(
+        bool trayEnabled,
+        bool startHidden = false,
+        QObject *parent = nullptr);
     ~AppController() override;
 
     [[nodiscard]] QString phase() const;
@@ -42,6 +53,14 @@ public:
     [[nodiscard]] bool paused() const;
     [[nodiscard]] int workMinutes() const noexcept;
     [[nodiscard]] int restMinutes() const noexcept;
+    [[nodiscard]] QString breakMessage() const;
+    [[nodiscard]] int breakMessageMaxLength() const noexcept;
+    [[nodiscard]] QString overlayBreakMessage() const;
+    [[nodiscard]] bool overlayDimBackground() const noexcept;
+    [[nodiscard]] bool overlayStrictMode() const noexcept;
+    [[nodiscard]] bool overlayWalkingSounds() const noexcept;
+    [[nodiscard]] bool overlayWalkingPurr() const noexcept;
+    [[nodiscard]] bool overlayRestPurr() const noexcept;
     [[nodiscard]] bool dimBackground() const noexcept;
     [[nodiscard]] bool strictMode() const noexcept;
     [[nodiscard]] bool autostart() const noexcept;
@@ -57,6 +76,7 @@ public:
     Q_INVOKABLE void applySettings(
         int workMinutes,
         int restMinutes,
+        const QString &breakMessage,
         bool dimBackground,
         bool strictMode,
         bool autostart,
@@ -66,7 +86,14 @@ public:
     Q_INVOKABLE void showSettings();
     Q_INVOKABLE void hideSettings();
     Q_INVOKABLE void setLanguage(const QString &language);
-    Q_INVOKABLE void previewBreak(int seconds);
+    Q_INVOKABLE void previewBreak(
+        int seconds,
+        const QString &breakMessage,
+        bool dimBackground,
+        bool strictMode,
+        bool walkingSounds,
+        bool walkingPurr,
+        bool restPurr);
     Q_INVOKABLE void beginRest();
     Q_INVOKABLE void completeLeaving();
     Q_INVOKABLE void finishBreakEarly();
@@ -80,8 +107,10 @@ signals:
     void remainingSecondsChanged();
     void pausedChanged();
     void settingsChanged();
+    void overlaySettingsChanged();
     void configuredChanged();
     void settingsVisibleChanged();
+    void settingsActivationRequested();
     void languageChanged();
     void catPokeRequested();
     void catHissRequested();
@@ -99,7 +128,15 @@ private:
     CountdownTimer m_timer;
     int m_workMinutes = 45;
     int m_restMinutes = 10;
+    QString m_breakMessage;
     int m_previewRestSeconds = 0;
+    QString m_previewBreakMessage;
+    bool m_previewSettingsActive = false;
+    bool m_previewDimBackground = true;
+    bool m_previewStrictMode = false;
+    bool m_previewWalkingSounds = true;
+    bool m_previewWalkingPurr = true;
+    bool m_previewRestPurr = true;
     bool m_dimBackground = true;
     bool m_strictMode = false;
     bool m_autostart = false;

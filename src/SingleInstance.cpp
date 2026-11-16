@@ -4,7 +4,7 @@
 #include <QLocalSocket>
 
 namespace {
-constexpr auto ServerName = "DeskCat.SingleInstance.v1";
+constexpr auto ServerName = "PauseMeow.SingleInstance.v1";
 constexpr int ConnectionTimeoutMs = 500;
 }
 
