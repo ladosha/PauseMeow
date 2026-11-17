@@ -59,8 +59,7 @@ try {
         "-BuildDir", $BuildDir,
         "-Configuration", $Configuration,
         "-QtBin", $QtBin,
-        "-SkipBuild",
-        "-AllowUnsigned"
+        "-SkipBuild"
     )
     Invoke-Checked -FilePath "powershell.exe" -ArgumentList $packageArguments
 

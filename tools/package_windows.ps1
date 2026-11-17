@@ -4,12 +4,7 @@ param(
     [ValidateSet("Release", "RelWithDebInfo")]
     [string]$Configuration = "Release",
     [string]$QtBin = "",
-    [string]$SignTool = "",
-    [string]$CertificatePath = "",
-    [string]$CertificateThumbprint = "",
-    [string]$TimestampUrl = "http://timestamp.digicert.com",
-    [switch]$SkipBuild,
-    [switch]$AllowUnsigned
+    [switch]$SkipBuild
 )
 
 $ErrorActionPreference = "Stop"
@@ -42,60 +37,6 @@ function Invoke-Checked {
     if ($LASTEXITCODE -ne 0) {
         throw "Command failed with exit code $LASTEXITCODE`: $FilePath"
     }
-}
-
-function Find-SignTool {
-    if (-not [string]::IsNullOrWhiteSpace($SignTool)) {
-        return $SignTool
-    }
-    $command = Get-Command "signtool.exe" -ErrorAction SilentlyContinue
-    if ($command) {
-        return $command.Source
-    }
-    $kitsRoot = Join-Path ${env:ProgramFiles(x86)} "Windows Kits\10\bin"
-    if (Test-Path $kitsRoot) {
-        $candidate = Get-ChildItem $kitsRoot -Filter "signtool.exe" -Recurse |
-            Where-Object { $_.FullName -match '\\x64\\signtool\.exe$' } |
-            Sort-Object FullName -Descending |
-            Select-Object -First 1
-        if ($candidate) {
-            return $candidate.FullName
-        }
-    }
-    return ""
-}
-
-function Invoke-AuthenticodeSign {
-    param([Parameter(Mandatory = $true)][string]$Path)
-
-    if ($AllowUnsigned) {
-        Write-Warning "Leaving unsigned: $Path"
-        return
-    }
-
-    $resolvedSignTool = Find-SignTool
-    if ([string]::IsNullOrWhiteSpace($resolvedSignTool)) {
-        throw "signtool.exe was not found. Install the Windows SDK or pass -SignTool."
-    }
-
-    $arguments = @("sign", "/fd", "SHA256", "/td", "SHA256", "/tr", $TimestampUrl)
-    if (-not [string]::IsNullOrWhiteSpace($CertificatePath)) {
-        if (-not (Test-Path -LiteralPath $CertificatePath -PathType Leaf)) {
-            throw "Certificate file does not exist: $CertificatePath"
-        }
-        $password = $env:PAUSEMEOW_SIGN_PASSWORD
-        if ([string]::IsNullOrWhiteSpace($password)) {
-            throw "Set PAUSEMEOW_SIGN_PASSWORD when signing with a PFX certificate."
-        }
-        $arguments += @("/f", [System.IO.Path]::GetFullPath($CertificatePath), "/p", $password)
-    } elseif (-not [string]::IsNullOrWhiteSpace($CertificateThumbprint)) {
-        $arguments += @("/sha1", ($CertificateThumbprint -replace '\s', ''))
-    } else {
-        throw "Pass -CertificatePath or -CertificateThumbprint, or explicitly use -AllowUnsigned."
-    }
-    $arguments += $Path
-    Invoke-Checked -FilePath $resolvedSignTool -ArgumentList $arguments
-    Invoke-Checked -FilePath $resolvedSignTool -ArgumentList @("verify", "/pa", "/v", $Path)
 }
 
 if (-not $SkipBuild) {
@@ -160,7 +101,6 @@ foreach ($notice in @(
 Invoke-Checked -FilePath $winDeployQt -ArgumentList @(
     "--release", "--qmldir", (Join-Path $projectRoot "qml"), "--dir", $stageDir, $stageExe
 )
-Invoke-AuthenticodeSign -Path $stageExe
 
 if (Test-Path -LiteralPath $archivePath) {
     Remove-Item -LiteralPath $archivePath -Force

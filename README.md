@@ -38,20 +38,10 @@ directory.
 
 ## Features
 
-- separate work and break durations;
-- smooth cat entrance, settling down, sleeping, waking up, and leaving;
-- full-screen break mode on every connected monitor;
-- an optional custom break message, limited to 120 characters for readability;
-- background dimming and a strict mode without an early-finish button;
-- a click reaction and an annoyed reaction to four rapid clicks;
-- synchronized footsteps and purring while walking, plus background purring
-  during breaks;
-- three independent switches for these sounds;
-- a mandatory meow during the annoyed four-click reaction;
-- work-timer pause and system-tray controls;
-- persistent settings and per-user autostart;
-- accurate monotonic-clock countdowns, including after the computer resumes
-  from sleep.
+- **Customizable** - Set your work and break durations and add a custom message.
+- **Strict Mode** - Stay committed to taking the full break.
+- **Optional sound effects** - Purring and meowing are on by default and can be
+  turned off.
 
 PauseMeow is designed around the cat interaction rather than as another generic
 Pomodoro interface: the cat enters, reacts to clicks, settles down, sleeps, and
@@ -109,8 +99,7 @@ Build the portable ZIP with the Qt runtime path supplied explicitly:
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass `
   -File .\tools\package_windows.ps1 `
-  -QtBin "C:\Qt\6.8.3\msvc2022_64\bin" `
-  -AllowUnsigned
+  -QtBin "C:\Qt\6.8.3\msvc2022_64\bin"
 ```
 
 The script builds PauseMeow, deploys its Qt runtime and QML dependencies, and
@@ -136,30 +125,6 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 
 The Sandbox configuration disables networking and maps only
 `artifacts\windows` as read-only.
-
-To sign `PauseMeow.exe` with a certificate from the Windows certificate store,
-omit `-AllowUnsigned` and supply its thumbprint:
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass `
-  -File .\tools\package_windows.ps1 `
-  -QtBin "C:\Qt\6.8.3\msvc2022_64\bin" `
-  -CertificateThumbprint "CERTIFICATE_SHA1_THUMBPRINT"
-```
-
-With a PFX file (keep its password outside the repository):
-
-```powershell
-$env:PAUSEMEOW_SIGN_PASSWORD = "PFX password"
-powershell.exe -NoProfile -ExecutionPolicy Bypass `
-  -File .\tools\package_windows.ps1 `
-  -QtBin "C:\Qt\6.8.3\msvc2022_64\bin" `
-  -CertificatePath "C:\certificates\pausemeow.pfx"
-Remove-Item Env:\PAUSEMEOW_SIGN_PASSWORD
-```
-
-Signing requires `signtool.exe` from the Windows SDK. Unsigned local packages
-must be requested explicitly with `-AllowUnsigned`.
 
 To remove a portable copy completely, first run
 `PauseMeow.exe --reset-settings` to clear saved settings and the per-user
@@ -228,7 +193,7 @@ Before reporting a problem:
 2. Restart PauseMeow and reproduce the problem.
 3. Record your operating-system version, PauseMeow version, monitor count and
    layout, and exact reproduction steps.
-4. Include screenshots or relevant console output when they do not contain
+4. Include screenshots or relevant error messages, optinally stripping
    private information.
 
 For Windows portable builds, keep the extracted directory in a stable location.
